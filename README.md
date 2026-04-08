@@ -14,7 +14,7 @@
 > - ## **Другое** - возможность воспроизводить другие ресурсы которые поддерживает Streamlink
 ---
 > [!TIP]
-> - ## **Чат в режиме твича** - в данный момент подерживается только [Chatterino](https://chatterino.com/) <details> <summary>?</summary> При вызове клиента чата вводятся доп аргументы -c channel_name поддерживаемые только в **Chatterino** </details>
+> - ## **Чат в режиме твича** - в данный момент подерживается только [Chatterino](https://chatterino.com/) <details> <summary>?</summary> При вызове клиента чата вводится доп аргумент -c channel_name поддерживаемые только в **Chatterino** </details>
 > - ## **Режим** - можно выбрать между **Python** модулем Streamlink и вызовом из системного PATH
 > - ## **OC** - Windows 8.1/10/11 <details> <summary>?</summary> На другий версиях Windows требуется тестирование
 ---
