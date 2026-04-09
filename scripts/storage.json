@@ -1,4 +1,5 @@
 {
   "channels": [],
-  "tabs": {}
+  "tabs": {},
+  "limit": 100
 }

@@ -205,7 +205,9 @@ def main():
     main_container.tkraise()
 
     q = queue.Queue()
-
+    qapi = queue.Queue()
+    api = storage.ApiWorker(qapi,q)
+    api.start()
 #==============================
 #РАБОТА С ГЛАВНОЙ ВКЛАДКОЙ
 #==============================
@@ -598,7 +600,11 @@ def main():
             self.placeholder_channels.configure(state = "disabled")
             self.Button_channels.configure(state = "disabled")
             self.update_channels_button.configure(state = "disabled")
-            threading.Thread(target=lambda: asyncio.run(storage.get_channels_info("saves",channels_list,q)),daemon=True).start()
+            #threading.Thread(target=lambda: asyncio.run(storage.get_channels_info("saves",channels_list,q)),daemon=True).start()
+            qapi.put({
+                "source" : "channels_info",
+                "value" : ["saves",channels_list]
+            })
             chek_queue("info_channel_key", self.update)        
 
         def update(self, data: list):
@@ -840,7 +846,11 @@ def main():
                 return
             for widget in self.container_tab.winfo_children():
                 widget.destroy()
-            threading.Thread(target=lambda: asyncio.run(storage.get_channels_info(name_tab, self.tabs.get(name_tab),q)),daemon=True).start()
+            #threading.Thread(target=lambda: asyncio.run(storage.get_channels_info(name_tab, self.tabs.get(name_tab),q)),daemon=True).start()
+            qapi.put({
+                "source" : "channels_info",
+                "value" : [name_tab,self.tabs.get(name_tab)]
+            })
             self.tabview_status = [True,name_tab]
             chek_queue("info_channel_key", self.update)    
 
@@ -892,10 +902,17 @@ def main():
 
         def get_team(self, frame,app):
             team = self.entry_channels.get().strip().lower()
-            self.team_info = asyncio.run(storage.get_team(team))
+            #self.team_info = asyncio.run(storage.get_team(team))
+            qapi.put({
+                "source": "get_team",
+                "value": team
+            })
+            chek_queue("get_team", lambda a :self.add_team(a,frame,app))
+
+        def add_team (self, team_info, frame, app):
             self.plays_button_image = ctk.CTkImage(light_image = Image.open(get_base_path()+"/assets/plays.png"), dark_image = Image.open(get_base_path()+"/assets/plays.png"), size = (20,20))
             self.add_button_image = ctk.CTkImage(light_image = Image.open(get_base_path()+"/assets/add.png"), dark_image = Image.open(get_base_path()+"/assets/add.png"), size = (20,20))
-            for channel in self.team_info:
+            for channel in team_info:
                 print(f"Создаю для {channel}")
                 self.draw_channel(channel=channel,frame=frame,app=app)
 
@@ -932,16 +949,24 @@ def main():
             status = self.status_channel.get(channel)
             if status == True:
                 self.activate_lef_btn(channel)
-            elif status == None:
-                status_new = asyncio.run(storage.is_lives(channel))
-                if status_new == True:
-                    tooltip.edit_text(text="Стримит, можно воспроизвести")
-                    button.configure(fg_color="green")
-                    self.status_channel[channel] = status_new
-                else:
-                    tooltip.edit_text(text="Не стримит, проверить снова?")
-                    button.configure(fg_color=self.default_color)
-                    self.status_channel[channel] = status_new
+            else:
+                #status_new = asyncio.run(storage.is_lives(channel))
+                qapi.put({
+                    "source": "is_lives",
+                    "value": channel 
+                })
+                tooltip.edit_text(text="Проверка")
+                chek_queue("is_lives", lambda a:self.add_is_lives(button,channel,tooltip,a))
+
+        def add_is_lives(self,button : ctk.CTkButton,channel : str, tooltip: tooltip, status_new):
+            if status_new == True:
+                tooltip.edit_text(text="Стримит, можно воспроизвести")
+                button.configure(fg_color="green")
+                self.status_channel[channel] = status_new
+            else:
+                tooltip.edit_text(text="Не стримит, проверить снова?")
+                button.configure(fg_color=self.default_color)
+                self.status_channel[channel] = status_new
 
         def chek_info_channel(self,channel: str):
             print(f"Вписываю {channel} в поле")
