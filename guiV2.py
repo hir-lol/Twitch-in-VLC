@@ -1049,35 +1049,47 @@ def main():
                 command=lambda: self.browse_exe(self.vlc_entry)
             ).pack(anchor="e", pady=(0, 10))
 
-            ctk.CTkLabel(container, text="Путь к клиенту чата").pack(anchor="w")
-
-            self.chat_entry = ctk.CTkEntry(
+            ctk.CTkLabel(container,text="Клиент чата").pack(anchor="w")
+            self.chat = ctk.CTkComboBox(
                 container,
-                placeholder_text="C:/Program Files/Chatterino/chatterino.exe"
+                values=["Chatterino","Браузер"], state="readonly"
             )
-            self.chat_entry.pack(fill="x", pady=(0, 5))
-            if "CHATTERINO_PATH" in config and config["CHATTERINO_PATH"] != "":
-                self.chat_entry.insert(0,config["CHATTERINO_PATH"])
+            self.chat.pack(anchor="w", pady=(0, 15))
+            self.chat_tooltip = tooltip(text="Если использовать браузер то он не будет закрываться",app=app,bind=self.chat)
+            if config.get("chat") in self.chat.cget("values"):
+                self.chat.set(config.get("chat"))
 
-            self.tooltip_chat_entry = tooltip(text="Необязательное поле",app=app,bind=self.chat_entry)
+            if config.get("chat") == "Chatterino":
 
-            ctk.CTkButton(
-                container,
-                text="Обзор",
-                command=lambda: self.browse_exe(self.chat_entry)
-            ).pack(anchor="e", pady=(0, 15))
+                ctk.CTkLabel(container, text="Путь chatterino").pack(anchor="w")
 
-            ctk.CTkLabel(container, text="Имя процесса клиента чата").pack(anchor="w")
+                self.chat_entry = ctk.CTkEntry(
+                    container,
+                    placeholder_text="C:/Program Files/Chatterino/chatterino.exe"
+                )
+                self.chat_entry.pack(fill="x", pady=(0, 15))
+                if "CHATTERINO_PATH" in config and config["CHATTERINO_PATH"] != "":
+                    self.chat_entry.insert(0,config["CHATTERINO_PATH"])
 
-            self.chat_process_entry = ctk.CTkEntry(
-                container,
-                placeholder_text="chatterino.exe"
-            )
-            self.chat_process_entry.pack(fill="x", pady=(0, 15))
-            if "NAME_proces_chat" in config and config["NAME_proces_chat"] != "":
-                self.chat_process_entry.insert(0,config.get("NAME_proces_chat"," "))
+                self.tooltip_chat_entry = tooltip(text="Необязательное поле",app=app,bind=self.chat_entry)
 
-            self.tooltip_chat_process_entry = tooltip(text="Необязательное поле",app=app,bind=self.chat_process_entry)
+                ctk.CTkButton(
+                    container,
+                    text="Обзор",
+                    command=lambda: self.browse_exe(self.chat_entry)
+                ).pack(anchor="e", pady=(0, 15))
+
+            # ctk.CTkLabel(container, text="Имя процесса клиента чата").pack(anchor="w")
+
+            # self.chat_process_entry = ctk.CTkEntry(
+            #     container,
+            #     placeholder_text="chatterino.exe"
+            # )
+            # self.chat_process_entry.pack(fill="x", pady=(0, 15))
+            # if "NAME_proces_chat" in config and config["NAME_proces_chat"] != "":
+            #     self.chat_process_entry.insert(0,config.get("NAME_proces_chat"," "))
+
+            # self.tooltip_chat_process_entry = tooltip(text="Необязательное поле",app=app,bind=self.chat_process_entry)
 
             ctk.CTkLabel(container, text="Режим работы").pack(anchor="w")
             self.mode = ctk.CTkComboBox(
@@ -1148,8 +1160,9 @@ def main():
             print("Сохранение настроек")
             nonlocal config            
             config["VLC_PATH"] = self.vlc_entry.get()
-            config["CHATTERINO_PATH"] = self.chat_entry.get()
-            config["NAME_proces_chat"] = self.chat_process_entry.get()
+            if config["chat"] == "Chatterino":
+                config["CHATTERINO_PATH"] = self.chat_entry.get()
+            config["chat"] = self.chat.get()
             config["mode"] = [self.mode.get(),(config.get("mode"))[1]]
             try:
                 with open(CONFIG_FILE, "w", encoding="utf-8") as f:

@@ -1,11 +1,8 @@
 {
     "VLC_PATH": "",
     "CHATTERINO_PATH": "",
-    "NAME_proces_chat": "",
-    "mode": [
-        "module",
-        "twitch"
-    ],
+    "chat": "",
+    "mode": ["module"],
     "channel": "",
     "kach": "",
     "otv": "",

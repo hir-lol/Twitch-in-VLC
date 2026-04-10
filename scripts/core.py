@@ -47,6 +47,7 @@ def get_seting():
             'channel' : config.get("channel"," ").strip().lower(),
             'kach' : config.get("kach","").strip().lower(),
             'VLC_PATH' : config.get("VLC_PATH"),
+            "chat" : config.get("chat"),
             'CHATTERINO_PATH' : config.get("CHATTERINO_PATH"),
             'otv' : config.get("otv"),
             'name_proces_chat' : config.get("NAME_proces_chat"),
@@ -93,8 +94,13 @@ def start_VLC(twitch_url, kach, VLC_PATH):
             f"Не удалось запустить стрим:\n{e}"
         )
         return False
-def start_chat(CHATTERINO_PATH:str, channel:str):
+def start_chat(channel:str, CHATTERINO_PATH:str = False):
     print("[INFO] Старт функции start_chat")
+    if CHATTERINO_PATH == False:
+        import webbrowser
+        url = f"https://www.twitch.tv/popout/{channel}/chat"
+        webbrowser.open(url)
+        return False
     proc = subprocess.Popen([CHATTERINO_PATH, "-c", channel])
     return proc
 
@@ -151,19 +157,26 @@ def start_VLC_module(twitch_url, kach, VLC_PATH):
 def main():
     print("[INFO] Старт функции main")
     seting = get_seting()
-    print(f"[DEBUG] mode -> {(seting.get("mode"))[1]}")
+    print(f"[DEBUG] mode -> {(seting.get("mode"))[1]}") #type: ignore
     if (seting.get("mode"))[1] == "twitch":
         print("[DEBUG] mode = twitch")
         channel = seting["channel"]
         kach = seting["kach"]
         VLC_PATH = seting["VLC_PATH"]
-        CHATTERINO_PATH = seting["CHATTERINO_PATH"]
+        chat = seting["chat"]
+        if chat == "Chatterino":
+            CHATTERINO_PATH = seting["CHATTERINO_PATH"]
+        else:
+            CHATTERINO_PATH = None
         otv = seting["otv"]
             # Канал
         twitch_url = f"https://www.twitch.tv/{channel}"
             # Чат
         if otv == True:
-            chat_proc = start_chat(CHATTERINO_PATH,channel)
+            if chat == "Chatterino":
+                chat_proc = start_chat(channel,CHATTERINO_PATH)
+            else:
+                chat_proc = start_chat(channel=channel)
     else:
         print("[DEBUG] mode = else")
         VLC_PATH = seting["VLC_PATH"]
@@ -189,11 +202,12 @@ def main():
             if vlc_proc:
                 print("[INFO] Закрытие VLC")
                 kill_process(str(vlc_proc.pid))
-            if seting["mode"] == "twitch" and otv == True:
+            if (seting["mode"])[1] == "twitch" and otv == True and chat_proc != False:
                 print("[INFO] Закрытие чата")
                 kill_process(str(chat_proc.pid))
-
+            return
 
 if __name__ == "__main__":
-    print("Старт ядра")
+    print("[INFO] Старт ядра")
     main()
+    print("[INFO] Завершение работы ядра")
