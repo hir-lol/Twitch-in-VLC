@@ -232,7 +232,3 @@ async def get_parameters_channel(channels: str):
                 "title" : False
             }
         return data
-
-#a = ["alfedov","secboba"]
-#d = asyncio.run(get_channels_info(a))
-#print(json.dumps(d,indent=2,ensure_ascii=False))

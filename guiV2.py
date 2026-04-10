@@ -554,7 +554,12 @@ def main():
                 botton_frame.pack(fill="x",padx=10,pady=(2,5))
                 
                 text_game_label = data.get("game")
-                game_label = ctk.CTkLabel(botton_frame,text=f"Категория:{text_game_label}")
+                game_label = ctk.CTkLabel(botton_frame)
+                if len(text_game_label) > 10:
+                    tooltip_game_label = tooltip(text=text_game_label, app = self.app, bind = game_label)
+                    game_label.configure(text="Категория")
+                else: 
+                    game_label.configure(text=f"Категория:{text_game_label}")
                 game_label.pack(side="left",padx=5)
 
                 text_viewer_label = data.get("viewercount")
@@ -567,13 +572,17 @@ def main():
                 
                 tooltip_title_label = tooltip(text=text_title_label, app=title_label,bind=title_label)      
             else:
+                if is_live == "error":
+                    left_btn.configure(fg_color="red")
+                    tooltip(text="Ошибка при обработке запроса",app=left_btn,bind=left_btn)
                 left_btn.configure(state="disabled")
+                botton_frame = None
 
             self.channel_frame[channel] = {
                 "frame":row_frame,
                 "top_frame":top_frame,
                 "status_label": status_label,
-                "botton_frame": botton_frame if is_live else None
+                "botton_frame": botton_frame
             }
     
         def edit_channels_activate(self):
@@ -810,7 +819,12 @@ def main():
                 botton_frame.pack(fill="x",padx=10,pady=(2,5))
                 
                 text_game_label = data.get("game")
-                game_label = ctk.CTkLabel(botton_frame,text=f"Категория:{text_game_label}")
+                game_label = ctk.CTkLabel(botton_frame)
+                if len(text_game_label) > 10:
+                    tooltip_game_label = tooltip(text=text_game_label, app = self.app, bind = game_label)
+                    game_label.configure(text="Категория")
+                else: 
+                    game_label.configure(text=f"Категория:{text_game_label}")
                 game_label.pack(side="left",padx=5)
 
                 text_viewer_label = data.get("viewercount")
@@ -823,6 +837,9 @@ def main():
                 
                 tooltip_title_label = tooltip(text=text_title_label, app=title_label,bind=title_label)      
             else:
+                if is_live == "error":
+                    left_btn.configure(fg_color="red")
+                    tooltip(text="Ошибка при обработке запроса",app=left_btn,bind=left_btn)
                 left_btn.configure(state="disabled")
 
         def on_tab_change(self):
