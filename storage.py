@@ -53,6 +53,7 @@ class ApiWorker():
         self.running = True
         self.reset_time = time.time() + 60
         self.request = 0 
+        self.queue_limit = None
 
     def start(self):
         threading.Thread(target=self._run,daemon=True).start()
@@ -61,7 +62,8 @@ class ApiWorker():
         asyncio.run(self._async_loop())
 
     async def _async_loop(self):
-        async with aiohttp.ClientSession() as s:
+        timeout = aiohttp.ClientTimeout(total=30)
+        async with aiohttp.ClientSession(timeout=timeout) as s:
             while self.running:
                 await self._check_queue(s)
                 await asyncio.sleep(1)
@@ -81,6 +83,7 @@ class ApiWorker():
                 continue
             elif keys == "quantity":
                 self.request += task.get("value")
+                await self._handle_rate_limit()
                 continue
             elif keys == "channels_info":
                 value = task.get("value")
@@ -92,32 +95,37 @@ class ApiWorker():
                 "source" :"info_channel_key",
                 "value" : [keys]
             })
-            quantity = 0 
+            if self.queue_limit is None:
+                import queue
+                self.queue_limit = queue.Queue()
             for ch in channels:
-                try:
-                    info, number  = await self.get_parameters_channels(ch, session)
-                    print(f"Получено для {ch}, отправление в очередь")
-                except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-                    print(f"Ошибка получения для {ch}, отправление в очередь, текст ошибки {e}")
-                    info = {
-                        "lives" : "error",
-                        "viewercount" : False ,
-                        "game" : False ,
-                        "title" : False
-                    }
-                quantity += number
-                self.queue_result.put({
-                    "source": keys,
-                    "value": [ch,info]
-                })
-            self.queue_result.put({
-                "source": keys,
-                "value": ["done"]
-            })
-            self.queue_request.put({
-                "source": "quantity",
-                "value": quantity
-            })
+                print(f"Отправка запросов для {ch}")
+                asyncio.create_task(self.get_parameters_channels(ch, session, keys))
+                await asyncio.sleep(0.5)
+            list_request = []
+            len_list = len(channels)
+            ready = 0
+            while True:
+                while not self.queue_limit.empty():
+                    request = self.queue_limit.get()
+                    try:
+                        if request.get("source") != keys:
+                            list_request.append(request)
+                            continue
+                    except Exception as e:
+                        list_request.append(request)
+                        continue
+                    ready += 1
+
+                    if ready == len_list :
+                        self.queue_result.put({
+                            "source": keys,
+                            "value": ["done"]
+                        })
+                        return
+                for request in list_request:
+                    self.queue_limit.put(request)
+                await asyncio.sleep(5)
 
     async def get_team(self, session: aiohttp.ClientSession, team: str):
         try:
@@ -153,23 +161,37 @@ class ApiWorker():
                 "value" : "error"
             })
 
-    async def get_parameters_channels(self, channels: str, session: aiohttp.ClientSession):
+    async def get_parameters_channels(self, channels: str, session: aiohttp.ClientSession, keys: str):
         url_viewercount = f"https://decapi.me/twitch/viewercount/{channels}"
         url_title = f"https://decapi.me/twitch/title/{channels}"
         url_game = f"https://decapi.me/twitch/game/{channels}"
-        async with session.get(url_viewercount) as r:
-            channels_viewercount = (await r.text()).strip()
-        if channels_viewercount.isdigit():
-            lives = True
-            request = 3
-        else :
-            lives = False
+        limit = await self._chek_ready_limit()
+        if limit is not False:
+           await asyncio.sleep(limit)
+        try:
+            async with session.get(url_viewercount) as r:
+                channels_viewercount = (await r.text()).strip()
+            if channels_viewercount.isdigit():
+                lives = True
+                request = 3
+            else :
+                lives = False
+                request = 1
+        except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+            lives = "error"
             request = 1
-        if lives == True:
-            async with session.get(url_title) as r:
-                channels_title = await r.text()
-            async with session.get(url_game) as r:
-                channels_game = await r.text()
+            print(f"Ошибка получения для {channels}, отправление в очередь, текст ошибки {e}")
+        if lives is True:
+            try:
+                async with session.get(url_title) as r:
+                    channels_title = await r.text()
+            except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+                channels_title = "Ошибка при полученнии"
+            try:
+                async with session.get(url_game) as r:
+                    channels_game = await r.text()
+            except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+                channels_game = "Ошика при полученнии"
             data = {
                 "lives" : lives,
                 "viewercount" : channels_viewercount,
@@ -183,7 +205,18 @@ class ApiWorker():
                 "game" : False ,
                 "title" : False
             }
-        return data, request
+        self.queue_request.put({
+            "source": "quantity",
+            "value": request
+        })
+        self.queue_result.put({
+            "source": keys,
+            "value": [channels,data]
+        })
+        self.queue_limit.put({
+            "source": keys,
+            "value" : channels
+        })
 
     async def _handle_rate_limit(self):
         now = time.time()
@@ -193,8 +226,37 @@ class ApiWorker():
         if self.request >= self.limit:
             sleep_time = self.reset_time - now
             print(f"Привышен лимит, ожидание :{sleep_time}")
+            if self.queue_limit is not None:
+                self.queue_limit.put({
+                    "source": "limit",
+                    "value" : sleep_time
+                })
+            asyncio.sleep(sleep_time)
             self.request = 0
             self.reset_time = now + 60
+
+    async def _chek_ready_limit(self) -> bool|int:
+        if self.queue_limit is None:
+            return False
+        list_reques = []
+        while not self.queue_limit.empty():
+            reques = self.queue_limit.get()
+            try:
+                if reques.get("source") != "limit":
+                    list_reques.append(reques)
+                    continue
+            except Exception as e :
+                list_reques.append(reques)
+                continue
+            limit = reques.get("value")
+            asyncio.create_task(self._add_in_queue_limit(list_reques))
+            return int(limit)
+        asyncio.create_task(self._add_in_queue_limit(list_reques))
+        return False 
+    
+    async def _add_in_queue_limit(self,list_reques: list):
+        for item in list_reques:
+            self.queue_limit.put(item)        
 
     def _read_limit(self):
         self.limit = load_storage()
