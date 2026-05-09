@@ -177,7 +177,13 @@ def main():
 #СОЗДАНИЕ ОКНА И ВКЛАДОК
 #===========================
 
-    ctk.set_appearance_mode("dark")
+    if "Dark_Theme" in config.get("More_Setting") :
+        if(config.get("More_Setting")).get("Dark_Theme") is False:
+            ctk.set_appearance_mode("light")
+        else:
+            ctk.set_appearance_mode("dark")
+    else:
+        ctk.set_appearance_mode("dark")
 
     app = ctk.CTk()
     app.title("Twitch in VLC")
@@ -338,7 +344,7 @@ def main():
         def on_start(self):
             channel = self.url_entry.get().strip()
             quality = self.quality_box.get().strip()
-            open_chat = self.chat_checkbox.get()
+            open_chat = self.chat_var.get()
             
             with open(CONFIG_FILE, "r", encoding = "utf-8") as f:
                 config = json.load(f)
@@ -655,7 +661,7 @@ def main():
             self.app.title("Информация о канале")
             self.app.geometry("350x310")
             self.app.after (200, lambda: self.app.iconbitmap(icon))
-            self.app.protocol("WM_DELETE_WINDOW", lambda: (self.app.withdraw(), setattr(self,"app_tab",False)))
+            self.app.protocol("WM_DELETE_WINDOW", lambda: self.tab())
             self.app_tab = False
             self.app.withdraw()
 
@@ -703,6 +709,7 @@ def main():
 
     class info_team():
         def __init__(self,app):
+            self.main_app = app
             self.app = ctk.CTkToplevel(app)
             self.app.title("Информация о сообществе")
             self.app.geometry("370x310")
@@ -715,6 +722,7 @@ def main():
             self.tabview.pack(fill="both",expand=True)
             self.tab_main = self.tabview.add("Найти")
 
+            self.get_mode()
             self.tabs_frame = {}
             self.tabview_status = [False]
             self.tabs_click_count = {}
@@ -766,6 +774,15 @@ def main():
             self.add_in_button = ctk.CTkButton(self.button_frame,text="Добавить в..", command=lambda:self.add_in_tabs(app=app))
             self.add_in_button.grid(row=2, column=0, sticky="ew", padx=5, pady=5)
             self.add_in_button_tooltip = tooltip(text="Добавить во вкладку в\nЭтом окне",app=app,bind=self.add_in_button)
+
+        def get_mode(self):
+            if "Team_mode" in config.get("More_Setting"):
+                if (config.get("More_Setting")).get("Team_mode") is True:
+                    self.mode = True
+                else:
+                    self.mode = False
+            else:
+                self.mode = False
 
         def activate_lef_btn(self, channel: str):
             print("Вписываем и нажимаем кнпоку")
@@ -852,7 +869,17 @@ def main():
                 return
             self.tabs_click_count[name_tab] += 1
             if self.tabs_click_count[name_tab] == 1:
-                self.update_list_tabview(name_tab)
+                if self.mode is True: 
+                    self.update_list_tabview(name_tab)
+                else: 
+                    self.container_tab = self.tabs_frame.get(name_tab)
+                    if self.container_tab == None:
+                        show_error("Ошибка","Произошла ошибка при обновлении содержимого вкладки\nПроверьте существует ли содержимое для данной вкладки")
+                        return
+                    for widget in self.container_tab.winfo_children():
+                        widget.destroy()
+                    self.add_team(self.tabs.get(name_tab),self.container_tab,self.main_app)                    
+
             if self.tabs_click_count[name_tab] >= 5:
                 self.tabs_click_count[name_tab] = 0
 
@@ -1027,6 +1054,234 @@ def main():
 #НАСТРОЙКИ
 #======================
 
+    class add_arg_setting():
+        """
+        Класс для окна с аргументами запуска streamlink
+        """
+        def __init__(self, app=ctk.CTk):
+            self.arg_app = ctk.CTkToplevel(app)
+            self.arg_app.title("Дополнительные аргументы")
+            self.arg_app.geometry("350x310")
+            self.arg_app.after (200, lambda: self.arg_app.iconbitmap(icon))
+            self.arg_app.protocol("WM_DELETE_WINDOW", lambda: self.arg_tab())
+            self.arg_app_tab = False
+            self.arg_app.withdraw()
+
+            self.top_frame = ctk.CTkFrame(self.arg_app)
+            self.top_frame.grid(row=0, column=0, sticky="ew", padx=10, pady=10)
+
+            self.entry_arg = ctk.CTkEntry(self.top_frame, placeholder_text="Аргумент")
+            self.entry_arg.grid(row=0, column=0, sticky="ew")
+            self.entry_arg.bind("<Return>", lambda e:self.add_in_arg())
+
+            self.Button_arg = ctk.CTkButton(self.top_frame, text="Добавить",width=80, command=lambda:self.add_in_arg())
+            self.Button_arg.grid(row=0, column=1)
+
+            self.top_frame.grid_columnconfigure(0, weight=1)
+
+            self.arg_app.grid_rowconfigure(1, weight=1)
+            self.arg_app.grid_columnconfigure(0, weight=1)
+
+            self.Main_Frame = ctk.CTkScrollableFrame(self.arg_app)
+            self.Main_Frame.grid(row=1, column=0, sticky="ew", padx=10, pady=10)
+            self.check_arg()
+            self.draw_arg()
+
+        def get_var(self) -> dict:
+            args = []
+            for item in self.var :
+                arg = {
+                    "text": item[0],
+                    "value": (item[1]).get(),
+                    "tooltip": item[2]
+                }
+                args.append(arg)
+            return args
+
+        def add_in_arg(self):
+            arg = self.entry_arg.get().strip()
+            if not arg:
+                show_error("Запрещено","Нельзя добавить пустоту")
+                return
+            self.entry_arg.delete(0, ctk.END)
+            print("Сохранение:",arg)
+            arg_dict = {"text" : arg}
+            self.args.append(arg_dict)
+            self.draw_arg()
+
+        def check_arg(self):
+            config = load_config(CONFIG_FILE)
+            args = config.get("More_Setting")
+            try:
+                self.args = args.get("Custom_arg")
+            except Exception as e:
+                print("ERROR in add_arg_setting:",e)
+                self.args = []
+
+        def draw_arg(self):
+            for widget in self.Main_Frame.winfo_children():
+                widget.destroy()
+            if self.args is None:
+                self.args = []
+            print("Начало отрисовки аргументов")
+            self.var = []
+            for arg in self.args:
+                try:
+                    text = arg.get("text")
+                    value = arg.get("value") 
+                    arg_tooltip = arg.get("tooltip")
+
+                    print("Отрисовка для",text)
+
+                    if value is True:
+                        vars = ctk.BooleanVar(value=True)
+                    else:
+                        vars = ctk.BooleanVar()
+
+                    ChecBox = ctk.CTkCheckBox(self.Main_Frame,text=text,variable=vars)
+                    ChecBox.pack(padx=5,pady=6,anchor="w")
+                    if arg_tooltip is not None:
+                        arg_tooltips = tooltip(arg_tooltip,self.arg_app,ChecBox)
+
+                    if arg_tooltip is not None:
+                        saves = [text, vars, arg_tooltip]
+                    else: 
+                        saves = [text, vars, None]
+
+                    self.var.append(saves)
+
+                except Exception as e :
+                    show_error("Ой","Ошибка при создании виджетов для аргументов")
+                    print("ERROR при отресовки:\n", e)
+            print("Конец отрисовки")
+
+        def arg_tab(self):
+            if self.arg_app_tab is False:
+                self.arg_app_tab = True
+                self.arg_app.deiconify()
+            else :
+                self.arg_app_tab = False 
+                self.arg_app.withdraw()
+
+    class dop_setting():
+        """
+        Класс для дополнительных настроек по нажатию
+        """
+        def __init__(self, app=ctk.CTkFrame, mode=str):
+            self.var=[]
+            self.tab_in = False
+            self.app = app
+            self.mode = mode
+            if self.mode == "portable":
+                self.add_arg_window(False)
+            self.get_config()
+            self.Add_Main_Objects()
+            self.Add_Setting_Objects()
+
+        def get_config(self):
+            config = load_config(CONFIG_FILE)
+            self.mods = config.get("More_Setting")
+            if self.mods is None:
+                self.mods = {}
+
+        def get(self) -> dict:
+            arg = {}
+            for item in self.var:
+                arg[item.get("tip")] = (item.get("var")).get()
+            if self.mode == "portable":
+                item = self.app_arg.get_var()
+                arg["Custom_arg"] = item
+            return arg
+
+        def Add_Setting_Objects(self):
+            self.Main_Frame = ctk.CTkFrame(self.app)
+
+            if self.mods.get("Dark_Theme") is True:
+                self.Dark_Theme_var = ctk.BooleanVar(value=True)
+            else:
+                self.Dark_Theme_var = ctk.BooleanVar()
+            self.Dark_Theme_CheckBox = ctk.CTkCheckBox(self.Main_Frame,text="Тёмная тема приложения",variable=self.Dark_Theme_var)
+            self.Dark_Theme_CheckBox.pack(pady=7,padx=5,anchor="w")
+            self.var.append({
+                "tip": "Dark_Theme",
+                "var": self.Dark_Theme_var
+            })
+
+            if self.mods.get("Team_mode") is True:
+                self.Team_var = ctk.BooleanVar(value=True)
+            else: 
+                self.Team_var = ctk.BooleanVar()
+            self.Team_CheckBox = ctk.CTkCheckBox(self.Main_Frame,text="Другой режим в Team",variable=self.Team_var)
+            self.Team_tooltip = tooltip("Переключить режим в сохранёных сообществах\nПо умолчанию будет как в поиске сообществ\nВ ином случае будет как в сохранёных каналах",self.app,self.Team_CheckBox)
+            self.Team_CheckBox.pack(pady=7,padx=5,anchor="w")
+            self.var.append({
+                "tip" : "Team_mode",
+                "var" : self.Team_var
+            })
+
+            if self.mode == "portable":
+                self.add_arg_window(True)
+
+        def add_arg_window (self, value = bool):
+            if value is False:
+                self.app_arg = add_arg_setting(self.app)
+            else:
+                self.agg_arg_frame = ctk.CTkFrame(self.Main_Frame)
+                self.agg_arg_frame.pack(pady=7,padx=5,anchor="w")
+
+                self.Image_arg = ctk.CTkImage(light_image = Image.open(get_base_path()+"/assets/info.png"), dark_image = Image.open(get_base_path()+"/assets/info.png"), size = (20,20))
+                self.agg_arg_Button = ctk.CTkButton(
+                    self.agg_arg_frame,
+                    text = "",
+                    image= self.Image_arg,
+                    width=20,
+                    command=lambda: self.app_arg.arg_tab()
+                )
+                self.agg_arg_Button.grid(row=0,column=0,padx=5,pady=5)
+
+                self.agg_arg_Label = ctk.CTkLabel(self.agg_arg_frame,text="Дополнительные аргументы")
+                self.agg_arg_Label.grid(row=0,column=1,padx=5,pady=5)
+                self.agg_arg_Tooltip = tooltip("Дополнительные аргументы при запуске стримов",self.app,self.agg_arg_Label)
+
+        def get_seting(self):
+            value = {}
+            for item in self.var :
+                value[item.get("tip")] = item.get("var")
+            return value
+
+        def tab(self):
+            try:
+                if self.tab_in is False:
+                    self.Main_Frame.pack(fill="x", pady=5, padx=3,anchor="w")
+                    self.Main_Button.configure(image=self.Image_open)
+                    self.tab_in = True
+                else:
+                    self.Main_Frame.pack_forget()
+                    self.Main_Button.configure(image=self.Image_close)
+                    self.tab_in = False
+            except Exception as e :
+                show_error("Ошибка","Ошибка при раскрытии контейнера с доп настройками")
+                print("ERROR:\n", e)
+
+        def Add_Main_Objects(self):
+            self.Main_Frame_Button = ctk.CTkFrame(self.app)
+            self.Main_Frame_Button.pack( pady=5, padx=3)
+
+            self.Image_close = ctk.CTkImage(light_image = Image.open(get_base_path()+"/assets/1.png"), dark_image = Image.open(get_base_path()+"/assets/1.png"), size = (20,20))
+            self.Image_open = ctk.CTkImage(light_image = Image.open(get_base_path()+"/assets/2.png"), dark_image = Image.open(get_base_path()+"/assets/2.png"), size = (20,20))
+
+            self.Main_Button = ctk.CTkButton(
+                self.Main_Frame_Button,
+                text = "",
+                image= self.Image_close,
+                width=20,
+                command=lambda: self.tab()
+            )
+            self.Main_Button.grid(row=0,column=0,padx=5,pady=5)
+
+            self.Main_Label = ctk.CTkLabel(self.Main_Frame_Button,text="Дополнительные настройки")
+            self.Main_Label.grid(row=0,column=1,padx=10,pady=5)
+
     class setings_tabs():
         def __init__ (self, app, container):
             self.app = app            
@@ -1079,18 +1334,6 @@ def main():
                     command=lambda: self.browse_exe(self.chat_entry)
                 ).pack(anchor="e", pady=(0, 15))
 
-            # ctk.CTkLabel(container, text="Имя процесса клиента чата").pack(anchor="w")
-
-            # self.chat_process_entry = ctk.CTkEntry(
-            #     container,
-            #     placeholder_text="chatterino.exe"
-            # )
-            # self.chat_process_entry.pack(fill="x", pady=(0, 15))
-            # if "NAME_proces_chat" in config and config["NAME_proces_chat"] != "":
-            #     self.chat_process_entry.insert(0,config.get("NAME_proces_chat"," "))
-
-            # self.tooltip_chat_process_entry = tooltip(text="Необязательное поле",app=app,bind=self.chat_process_entry)
-
             ctk.CTkLabel(container, text="Режим работы").pack(anchor="w")
             self.mode = ctk.CTkComboBox(
                 container,
@@ -1099,7 +1342,14 @@ def main():
             self.mode.pack(anchor="w")
             self.mode_tooltip = tooltip(text="module - Используется пайтон модуль\nportable - Используется portable версия streamlink",app=app,bind=self.mode)
             if (config.get("mode"))[0] in self.mode.cget("values"):
-                self.mode.set((config.get("mode"))[0])
+                self.mode_var = (config.get("mode"))[0]
+                self.mode.set(self.mode_var)
+            else:
+                self.mode_var = "UNKNOW"
+
+            self.dop_setting_frame = ctk.CTkFrame(container)
+            self.dop_setting = dop_setting(self.dop_setting_frame,self.mode_var)
+            self.dop_setting_frame.pack(pady=5,anchor="w",padx=10)
 
             ctk.CTkButton(
                 container,
@@ -1152,7 +1402,7 @@ def main():
                 filetypes=[("Executable files", "*.exe"), ("All files", "*.*")]
             )
 
-            if path:  # если пользователь не нажал "Отмена"
+            if path:
                 entry_widget.delete(0, "end")
                 entry_widget.insert(0, path)
 
@@ -1164,14 +1414,16 @@ def main():
                 config["CHATTERINO_PATH"] = self.chat_entry.get()
             config["chat"] = self.chat.get()
             config["mode"] = [self.mode.get(),(config.get("mode"))[1]]
+            config["More_Setting"] = self.dop_setting.get()
             try:
                 with open(CONFIG_FILE, "w", encoding="utf-8") as f:
                     json.dump(config, f, indent=4, ensure_ascii=False)
                     for widget in self.container.winfo_children():
                         widget.destroy()
-                    self.__init__(self.app,self.container)
+                    self.app.after(100, lambda: self.__init__(self.app,self.container))
             except Exception as e :
-                show_error(f"Ошибка записи конфига","При записи настроек в конфиг что-то пошло не так\n{e}")
+                show_error(f"Ошибка записи конфига","При записи настроек в конфиг что-то пошло не так\n {e}")
+                print("ERROR:\n",e)
 
     seting_window = setings_tabs(app=app, container = seting_container)
 

@@ -50,7 +50,6 @@ def get_seting():
             "chat" : config.get("chat"),
             'CHATTERINO_PATH' : config.get("CHATTERINO_PATH"),
             'otv' : config.get("otv"),
-            'name_proces_chat' : config.get("NAME_proces_chat"),
             "mode": config.get("mode"),
         }
     else:
@@ -68,17 +67,35 @@ def print(*args,**kwargs):
     builtins.print(*args, file = log, flush=True, **kwargs)
 sys.stderr = log
 
+def get_arg(twitch_url, kach, VLC_PATH) -> list:
+    base = [
+        "streamlink",
+        twitch_url,
+        kach,
+        "--player-passthrough", "hls",
+        "--player", VLC_PATH
+    ]
+    config = load_config()
+    config = config.get("More_Setting")
+    try:
+        args = config.get("Custom_arg")
+    except Exception :
+        args = []
+    for item in args:
+        try:
+            if item.get("value") is True:
+                base.append(item.get("text"))
+            else :
+                continue
+        except Exception:
+            continue
+    return base
+
 def start_VLC(twitch_url, kach, VLC_PATH):
     print("[INFO] Старт функции start_VLC")
     try:
-        proc = subprocess.Popen([
-            "streamlink",
-            twitch_url,
-            kach,
-            "--player-passthrough", "hls",
-            "--player", VLC_PATH
-        ], stdout = subprocess.PIPE, stderr = subprocess.PIPE, text=True, creationflags = subprocess.CREATE_NO_WINDOW)
-    
+        base = get_arg(twitch_url, kach, VLC_PATH)
+        proc = subprocess.Popen(base, stdout = subprocess.PIPE, stderr = subprocess.PIPE, text=True, creationflags = subprocess.CREATE_NO_WINDOW)    
         return proc
         
     except FileNotFoundError:
