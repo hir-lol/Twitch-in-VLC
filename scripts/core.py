@@ -111,14 +111,17 @@ def start_VLC(twitch_url, kach, VLC_PATH):
             f"Не удалось запустить стрим:\n{e}"
         )
         return False
-def start_chat(channel:str, CHATTERINO_PATH:str = False):
+def start_chat(channel:str, CHATTERINO_PATH:str = False, Mode:bool = False):
     print("[INFO] Старт функции start_chat")
-    if CHATTERINO_PATH == False:
+    if CHATTERINO_PATH is False:
         import webbrowser
         url = f"https://www.twitch.tv/popout/{channel}/chat"
         webbrowser.open(url)
         return False
-    proc = subprocess.Popen([CHATTERINO_PATH, "-c", channel])
+    if Mode is False: 
+        proc = subprocess.Popen([CHATTERINO_PATH, "-c", channel])
+    else:
+        proc = subprocess.Popen([CHATTERINO_PATH])
     return proc
 
 def search_vlc (proc):
@@ -181,7 +184,7 @@ def main():
         kach = seting["kach"]
         VLC_PATH = seting["VLC_PATH"]
         chat = seting["chat"]
-        if chat == "Chatterino":
+        if chat == "Chatterino" or chat == "Другой":
             CHATTERINO_PATH = seting["CHATTERINO_PATH"]
         else:
             CHATTERINO_PATH = None
@@ -192,6 +195,8 @@ def main():
         if otv == True:
             if chat == "Chatterino":
                 chat_proc = start_chat(channel,CHATTERINO_PATH)
+            elif chat == "Другой":
+                chat_proc = start_chat(channel,CHATTERINO_PATH,True)
             else:
                 chat_proc = start_chat(channel=channel)
     else:
