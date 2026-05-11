@@ -1110,9 +1110,9 @@ def main():
             self.draw_arg()
 
         def check_arg(self):
-            config = load_config(CONFIG_FILE)
-            args = config.get("More_Setting")
+            config = load_config(CONFIG_FILE)            
             try:
+                args = config.get("More_Setting")
                 self.args = args.get("Custom_arg")
             except Exception as e:
                 print("ERROR in add_arg_setting:",e)
@@ -1179,10 +1179,14 @@ def main():
             self.Add_Setting_Objects()
 
         def get_config(self):
-            config = load_config(CONFIG_FILE)
-            self.mods = config.get("More_Setting")
-            if self.mods is None:
+            try:
+                config = load_config(CONFIG_FILE)
+                self.mods = config.get("More_Setting")
+                if self.mods is None:
+                    self.mods = {}
+            except Exception as e :
                 self.mods = {}
+                print("ERROR in dopsetting/get_config:\n",e)
 
         def get(self) -> dict:
             arg = {}
@@ -1293,7 +1297,7 @@ def main():
                 placeholder_text="C:/Program Files/VideoLAN/VLC/vlc.exe"
             )
             self.vlc_entry.pack(fill="x", pady=(0, 5))
-            if "VLC_PATH" in config  and config["VLC_PATH"] != "":
+            if "VLC_PATH" in config  and config.get("VLC_PATH") != "":
                 self.vlc_entry.insert(0,config["VLC_PATH"])
 
             self.tooltip_vlc_entry = tooltip(text="Обязательное поле",app=app,bind=self.vlc_entry)
@@ -1413,7 +1417,7 @@ def main():
             print("Сохранение настроек")
             nonlocal config            
             config["VLC_PATH"] = self.vlc_entry.get()
-            if config["chat"] == "Chatterino":
+            if config.get("chat") != "Браузер":
                 config["CHATTERINO_PATH"] = self.chat_entry.get()
             config["chat"] = self.chat.get()
             config["mode"] = [self.mode.get(),(config.get("mode"))[1]]
