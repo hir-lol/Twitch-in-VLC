@@ -356,15 +356,15 @@ def main():
                 config["otv"] = bool(open_chat)
             else:
                 url = "https://" + channel
-                config["mode"] = self.mode
+                config["mode"] = [(config["mode"])[0],self.mode]
                 config["URL"] = url
                 config["URL_KACH"] = quality
             
             with open(CONFIG_FILE, "w", encoding = "utf-8") as f:
                 json.dump(config, f, indent=4,ensure_ascii=False)
                 
-            core_pat = os.path.join(get_base_path()+"/scripts/core.exe")
-            self.proc = subprocess.Popen([core_pat], shell= False,stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True)
+            core_pat = os.path.join(get_base_path()+"/scripts/core.py")
+            self.proc = subprocess.Popen(["python",core_pat], shell= False,stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True)
 
         def check_ready(self):
             channel_ok = bool(self.url_entry.get().strip())
@@ -382,7 +382,10 @@ def main():
                     show_error("Streamlink не найден","Streamlink не обнаружен в PATH\nУстановите Streamlink и перезапустите программу")
                     return
             
-            channel = self.url_entry.get().strip().lower()
+            if self.mode == "twitch":
+                channel = self.url_entry.get().strip().lower()
+            else:
+                channel = self.url_entry.get().strip()
 
             if not channel:
                 print("Введите никнейм")
