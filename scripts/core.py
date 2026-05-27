@@ -62,7 +62,7 @@ def get_seting():
 # ========================================
 # ФУНКЦИИ
 # ========================================
-log = open(get_base_path() / "core.log","w",buffering=1)
+log = open(get_base_path() / "core.log","w",buffering=1,encoding="utf-8")
 def print(*args,**kwargs):
     builtins.print(*args, file = log, flush=True, **kwargs)
 sys.stderr = log
@@ -85,6 +85,7 @@ def get_arg(twitch_url, kach, VLC_PATH) -> list:
         try:
             if item.get("value") is True:
                 base.append(item.get("text"))
+                print("[INFO] Добавлен кастомный аргумент",item.get("text"))
             else :
                 continue
         except Exception:
