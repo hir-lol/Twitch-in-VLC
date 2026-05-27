@@ -266,7 +266,9 @@ def main():
 
         def reset(self):
             print("Нажата кнопка сброса")
-            if self.qualites_state is True :
+            if self.stream_running is True:
+                return # кнопка не внутри класса поэтому так сделано
+            elif self.qualites_state is True :
                 print("Очистка ведённых данных")
 
                 self.confirm_btn.configure(state="normal")
@@ -289,7 +291,7 @@ def main():
                 self.stream_running = True
                 self.start_stream()
             else:
-                if self.core_ready == False:
+                if self.core_ready is False:
                     show_error("Ошибка","Ядро ещё не запустилось для закрытия")
                     return
                 self.stop_stream()
