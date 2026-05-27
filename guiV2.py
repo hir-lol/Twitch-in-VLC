@@ -259,6 +259,20 @@ def main():
             self.chat_checkbox = ctk.CTkCheckBox(app, text = "Запускать ли чат?", variable = self.chat_var)
             self.chat_checkbox.pack(pady=5)
 
+            self.reset_image = ctk.CTkImage(light_image = Image.open(get_base_path()+"/assets/reset.png"), dark_image = Image.open(get_base_path()+"/assets/reset.png"), size = (20,20))
+            self.reset_button = ctk.CTkButton(
+                app,
+                image = self.reset_image,
+                width = 20,
+                height = 20,
+                text = "",
+                hover=False,
+                corner_radius=10,
+                command=lambda:self.reset()
+            )
+            self.reset_button.place(relx = 0, rely = 0,anchor="nw", x = 5, y = 20)
+            self.reset_tooltip = tooltip("Сбросить ведёные данные и разблокировать кнопки",window,self.reset_button)
+
             self.app = window
             self.mode = "twitch"
             self.q = q
@@ -267,7 +281,7 @@ def main():
         def reset(self):
             print("Нажата кнопка сброса")
             if self.stream_running is True:
-                return # кнопка не внутри класса поэтому так сделано
+                return
             elif self.qualites_state is True :
                 print("Очистка ведённых данных")
 
@@ -313,6 +327,7 @@ def main():
             self.url_entry.configure(state="normal")
             self.chat_checkbox.configure(state="normal")
             self.confirm_btn.configure(state="normal")
+            self.reset_button.configure(state="normal")
 
             self.qualites_state = False
 
@@ -328,6 +343,7 @@ def main():
             self.url_entry.configure(state="disabled")
             self.chat_checkbox.configure(state="disabled")
             self.confirm_btn.configure(state="disabled")
+            self.reset_button.configure(state="disabled")
 
         def check_core_ready(self):
             queues = []
@@ -462,19 +478,6 @@ def main():
             self.check_ready() 
     
     main_tab = tab_twitch(app=main_container, window=app, q=q)
-    reset_image = ctk.CTkImage(light_image = Image.open(get_base_path()+"/assets/reset.png"), dark_image = Image.open(get_base_path()+"/assets/reset.png"), size = (20,20))
-    main_tab_reset_button = ctk.CTkButton(
-        main_container,
-        image = reset_image,
-        width = 20,
-        height = 20,
-        text = "",
-        hover=False,
-        corner_radius=10,
-        command=lambda:main_tab.reset()
-    )
-    main_tab_reset_button.place(relx = 0, rely = 0,anchor="nw", x = 5, y = 20)
-    main_tab_reset_tooltip = tooltip("Сбросить ведёные данные и разблокировать кнопки",app,main_tab_reset_button)
 
     icon_main = ctk.CTkImage(light_image = Image.open(get_base_path()+"/assets/icon1v.png"), dark_image = Image.open(get_base_path()+"/assets/icon1v.png"), size = (22,22))
     icon_url = ctk.CTkImage(light_image = Image.open(get_base_path()+"/assets/icon2v.png"), dark_image = Image.open(get_base_path()+"/assets/icon2v.png"), size = (22,22))
@@ -506,19 +509,6 @@ def main():
     url_tab.confirm_btn.configure(text="Получить качества")
     url_tab.url_entry.configure(placeholder_text="https://...")
     url_tab.quality_box_text = "Получите качества снова"
-
-    url_tab_reset_button = ctk.CTkButton(
-        url_container,
-        image = reset_image,
-        width = 20,
-        height = 20,
-        text = "",
-        hover=False,
-        corner_radius=10,
-        command=lambda:url_tab.reset()
-    )
-    url_tab_reset_button.place(relx = 0, rely = 0,anchor="nw", x = 5, y = 20)
-    url_tab_reset_tooltip = tooltip("Сбросить ведёные данные и разблокировать кнопки",app,url_tab_reset_button)
 
 #======================
 #ВКЛАДКА С ЗАПИСАНАМИ КАНАЛАМИ
