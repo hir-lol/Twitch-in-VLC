@@ -142,6 +142,11 @@ def main():
         app.after(100,lambda: chek_queue(keys, callback))
 
     class tooltip():
+        """
+        text - Текст подсказки
+        app - Главное окно, то на чей основе будет создан обьект подсказки (дочерний виджет)
+        bind - Обьект к которому будет привязываться подсказка
+        """
         def __init__(self, text: str,app,bind=None):
             self.tooltip = ctk.CTkToplevel(app)
             self.tooltip.overrideredirect(True)
@@ -166,7 +171,9 @@ def main():
             self.bind.unbind("<Leave>", funcid=None)
             self.label.destroy()
             self.tooltip.destroy()
-        def binds(self):
+        def binds(self, widget = None):
+            if widget is not None:
+                self.bind = widget
             self.bind.bind("<Enter>", self.on_enter)
             self.bind.bind("<Leave>", self.on_leave)
         def unbinds(self):
@@ -255,6 +262,27 @@ def main():
             self.app = window
             self.mode = "twitch"
             self.q = q
+            self.qualites_state = False
+
+        def reset(self):
+            print("Нажата кнопка сброса")
+            if self.qualites_state is True :
+                print("Очистка ведённых данных")
+
+                self.confirm_btn.configure(state="normal")
+                self.quality_box.set("")
+                self.quality_box.configure(values=[],state="disabled")
+                self.url_entry.configure(state="normal")
+                self.url_entry.delete(0, ctk.END)
+                self.start_btn.configure(state="disabled")
+
+                self.qualites_state = False
+                return
+            try:
+                if config.get("More_Setting").get("Reset_mode") is True:
+                    self.url_entry.delete(0, ctk.END)
+            except Exception as e:
+                print(f"Ошибка при проверке настроек в tab_twitch/reset \nВозможно некорректный конфиг, текст ошибки\n{e}")
 
         def active_strim_btn(self):
             if not self.stream_running:
@@ -268,7 +296,7 @@ def main():
                 self.stream_running = False
 
         def stop_stream(self):
-            if self.core_error == False:
+            if self.core_error is False:
                 self.proc.stdin.write("exit\n")
                 self.proc.stdin.flush()
 
@@ -283,6 +311,8 @@ def main():
             self.url_entry.configure(state="normal")
             self.chat_checkbox.configure(state="normal")
             self.confirm_btn.configure(state="normal")
+
+            self.qualites_state = False
 
         def start_stream(self):
             self.on_start()
@@ -363,8 +393,8 @@ def main():
             with open(CONFIG_FILE, "w", encoding = "utf-8") as f:
                 json.dump(config, f, indent=4,ensure_ascii=False)
                 
-            core_pat = os.path.join(get_base_path()+"/scripts/core.py")
-            self.proc = subprocess.Popen(["python",core_pat], shell= False,stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True)
+            core_pat = os.path.join(get_base_path()+"/scripts/core.exe")
+            self.proc = subprocess.Popen([core_pat], shell= False,stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True)
 
         def check_ready(self):
             channel_ok = bool(self.url_entry.get().strip())
@@ -418,8 +448,10 @@ def main():
                 self.quality_box.configure(state = "disabled")      
                 self.confirm_btn.configure(state="normal")      
                 self.url_entry.configure(state = "normal")
+                self.qualites_state = False
                 return
 
+            self.qualites_state = True
             self.quality_box.configure(values=qualities)
             self.quality_box.configure(state = "readonly")
             self.quality_box.set("")
@@ -428,6 +460,19 @@ def main():
             self.check_ready() 
     
     main_tab = tab_twitch(app=main_container, window=app, q=q)
+    reset_image = ctk.CTkImage(light_image = Image.open(get_base_path()+"/assets/reset.png"), dark_image = Image.open(get_base_path()+"/assets/reset.png"), size = (20,20))
+    main_tab_reset_button = ctk.CTkButton(
+        main_container,
+        image = reset_image,
+        width = 20,
+        height = 20,
+        text = "",
+        hover=False,
+        corner_radius=10,
+        command=lambda:main_tab.reset()
+    )
+    main_tab_reset_button.place(relx = 0, rely = 0,anchor="nw", x = 5, y = 20)
+    main_tab_reset_tooltip = tooltip("Сбросить ведёные данные и разблокировать кнопки",app,main_tab_reset_button)
 
     icon_main = ctk.CTkImage(light_image = Image.open(get_base_path()+"/assets/icon1v.png"), dark_image = Image.open(get_base_path()+"/assets/icon1v.png"), size = (22,22))
     icon_url = ctk.CTkImage(light_image = Image.open(get_base_path()+"/assets/icon2v.png"), dark_image = Image.open(get_base_path()+"/assets/icon2v.png"), size = (22,22))
@@ -459,6 +504,19 @@ def main():
     url_tab.confirm_btn.configure(text="Получить качества")
     url_tab.url_entry.configure(placeholder_text="https://...")
     url_tab.quality_box_text = "Получите качества снова"
+
+    url_tab_reset_button = ctk.CTkButton(
+        url_container,
+        image = reset_image,
+        width = 20,
+        height = 20,
+        text = "",
+        hover=False,
+        corner_radius=10,
+        command=lambda:url_tab.reset()
+    )
+    url_tab_reset_button.place(relx = 0, rely = 0,anchor="nw", x = 5, y = 20)
+    url_tab_reset_tooltip = tooltip("Сбросить ведёные данные и разблокировать кнопки",app,url_tab_reset_button)
 
 #======================
 #ВКЛАДКА С ЗАПИСАНАМИ КАНАЛАМИ
@@ -1198,6 +1256,8 @@ def main():
             if self.mode == "portable":
                 item = self.app_arg.get_var()
                 arg["Custom_arg"] = item
+            else:
+                arg["Custom_arg"] = self.mods.get("Custom_arg")
             return arg
 
         def Add_Setting_Objects(self):
@@ -1228,6 +1288,18 @@ def main():
 
             if self.mode == "portable":
                 self.add_arg_window(True)
+
+            if self.mods.get("Reset_mode") is True:
+                self.Reset_var = ctk.BooleanVar(value=True)
+            else: 
+                self.Reset_var = ctk.BooleanVar()
+            self.Reset_CheckBox = ctk.CTkCheckBox(self.Main_Frame,text="Кнопка очистики очещает всегда",variable=self.Reset_var)
+            self.Reset_tooltip = tooltip("Кнопка очистки очищает поле ввода никнейма/ссылки всегда",self.app,self.Reset_CheckBox)
+            self.Reset_CheckBox.pack(pady=7,padx=5,anchor="w")
+            self.var.append({
+                "tip" : "Reset_mode",
+                "var" : self.Reset_var
+            })
 
         def add_arg_window (self, value = bool):
             if value is False:
@@ -1383,20 +1455,21 @@ def main():
 
             self.tooltip_vlc_download_button = tooltip(text="Можно использовать любой другой\nплеер который поддерживается\nstreamlink, можно посмотреть\nна их сайте",app=app,bind=self.vlc_download_button)
 
-            self.chatterino_download_button = ctk.CTkButton(
-                container,
-                text="Скачать Chatterino",
-                command=lambda: self.open_url("https://chatterino.com/")
-            )
-            self.chatterino_download_button.pack(anchor="w", pady=3)
+            if config.get("chat") == "Chatterino":
+                self.chatterino_download_button = ctk.CTkButton(
+                    container,
+                    text="Скачать Chatterino",
+                    command=lambda: self.open_url("https://chatterino.com/")
+                )
+                self.chatterino_download_button.pack(anchor="w", pady=3)
 
-            self.tooltip_chatterino_download_button = tooltip(text="Можно использовать любой\nдругой клиент чата",app=app,bind=self.chatterino_download_button)
+            #self.tooltip_chatterino_download_button = tooltip(text="Можно использовать любой\nдругой клиент чата",app=app,bind=self.chatterino_download_button)
 
             if (config.get("mode"))[0] != "module":
                 self.streamlink_download_button = ctk.CTkButton(
                     container,
                     text="Скачать Stream Link",
-                    command=lambda: self.open_url("https://streamlink.gihub.io")
+                    command=lambda: self.open_url("https://streamlink.github.io")
                 )
                 self.streamlink_download_button.pack(anchor="w", pady=3)
 
