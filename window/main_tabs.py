@@ -187,6 +187,7 @@ class tab_twitch():
             self.config["URL"] = url
             self.config["URL_KACH"] = quality
             
+        MainConfig.save_config()
         core_pat = str(get_base_path() + "/scripts/core.exe")
         self.proc = subprocess.Popen([core_pat], shell= False,stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True)
 
