@@ -188,6 +188,19 @@ class dop_setting():
             "var" : self.Reset_var
         })
 
+        if self.mods.get("Close_mode") is True:
+            self.Close_var = ctk.BooleanVar(value=True)
+        else:
+            self.Close_var = ctk.BooleanVar()
+        if self.mode == "portable":
+            self.Close_CheckBox = ctk.CTkCheckBox(self.Main_Frame,text="Другое поведение кнопки Stop",variable=self.Close_var)
+            self.Close_tooltip = tooltip("Закрывается VLC и StreamLink одновременно\nВместо закрытия только VLC",self.app,self.Close_CheckBox)
+            self.Close_CheckBox.pack(pady=7,padx=5,anchor="w")
+        self.var.append({
+            "tip" : "Close_mode",
+            "var" : self.Close_var
+        })
+
     def add_arg_window (self, value = bool):
         if value is False:
             self.app_arg = add_arg_setting(self.app)
@@ -227,7 +240,7 @@ class dop_setting():
                 self.tab_in = False
         except Exception as e :
             show_error("Ошибка","Ошибка при раскрытии контейнера с доп настройками")
-            print("ERROR:\n", e)
+            print("[ERROR] Seting/dop_setting/tab :\n", e)
 
     def Add_Main_Objects(self):
         self.Main_Frame_Button = ctk.CTkFrame(self.app)

@@ -21,7 +21,7 @@
 # Сборка из исходников
 - Скомпилируйте ядро: пример PyInstaller
 ``` bash
-pyinstaller --noconfirm --onefile --windowed --name "core" --collect-submodules "streamlink.plugins" --copy-metadata "psutil" --copy-metadata "streamlink"  "core.py"
+pyinstaller --noconfirm --onefile --windowed --name "core" --collect-submodules "streamlink.plugins" --copy-metadata "streamlink"  "core.py"
 ```
 - Скомпилируйте gui: пример PyInstaller
 ``` bash

@@ -217,11 +217,22 @@ def main():
     status = "ready\n"
     sys.stdout.write(status)
     sys.stdout.flush()
+
+    try:
+        mode = (load_config().get("More_Setting")).get("Close_mode")
+        print(f"[DEBUG] Close_mode = {mode}")
+    except Exception as e:
+        mode = False
+        print("[ERROR] Ошибка при получении режима закрытия\n",e)
+
     for line in sys.stdin:
         if line.strip() == "exit":
             print("[INFO] Получена команда закрытия")
             if (seting.get("mode"))[0] == "portable":
                 vlc_proc = search_vlc(streamlink_proc)
+                if mode is True:
+                    print("[INFO] Закрытие StreamLink")
+                    kill_process(str(streamlink_proc.pid))
             if vlc_proc:
                 print("[INFO] Закрытие VLC")
                 kill_process(str(vlc_proc.pid))
