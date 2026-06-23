@@ -26,7 +26,7 @@ jobs:
         run: pip install pyinstaller
 
       - name: core.py -> core.exe
-        run: pyinstaller --noconfirm --onefile --windowed --name "core" --collect-submodules "streamlink.plugins" --copy-metadata "streamlink"  "\scripts\core.py" 
+        run: pyinstaller --noconfirm --onefile --windowed --name "core" --collect-submodules "streamlink.plugins" --copy-metadata "streamlink"  "scripts\core.py" 
 
       - name: Build root
         run: pyinstaller --noconfirm --onedir --windowed --icon "assets\ICON.ico" --name "Twitch in VLC"  --collect-submodules "streamlink.plugins" --copy-metadata "customtkinter" --copy-metadata "aiohttp" --copy-metadata "streamlink" --copy-metadata "pillow"  "guiV2.py"
