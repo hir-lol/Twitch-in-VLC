@@ -58,12 +58,16 @@ class tab_twitch():
         self.mode = "twitch"
         self.q = self.communicate.q
         self.config = self.communicate.config
+        self.dop_config = self.config.get("More_Setting") if "More_Setting" in self.config else {}
         self.qualites_state = False
 
     def reset(self):
         print("Нажата кнопка сброса")
         if self.stream_running is True:
-            return
+            if self.dop_config.get("Reset_close_mode") is True and self.core_ready is True:
+                self.active_strim_btn(False)
+            else:
+                return
         elif self.qualites_state is True :
             print("Очистка ведённых данных")
 
@@ -75,14 +79,10 @@ class tab_twitch():
             self.start_btn.configure(state="disabled")
 
             self.qualites_state = False
-            return
-        try:
-            if self.config.get("More_Setting").get("Reset_mode") is True:
-                self.url_entry.delete(0, ctk.END)
-        except Exception as e:
-            print(f"Ошибка при проверке настроек в tab_twitch/reset \nВозможно некорректный конфиг, текст ошибки\n{e}")
+        if self.dop_config.get("Reset_mode") is True:
+            self.url_entry.delete(0, ctk.END)
 
-    def active_strim_btn(self):
+    def active_strim_btn(self,close: bool = True):
         if not self.stream_running:
             self.stream_running = True
             self.start_stream()
@@ -90,20 +90,25 @@ class tab_twitch():
             if self.core_ready is False:
                 show_error("Ошибка","Ядро ещё не запустилось для закрытия")
                 return
-            self.stop_stream()
+            self.stop_stream(close)
             self.stream_running = False
 
-    def stop_stream(self):
+    def stop_stream(self, close: bool = True):
         if self.core_error is False:
-            self.proc.stdin.write("exit\n")
-            self.proc.stdin.flush()
+            if close is True:
+                self.proc.stdin.write("exit\n")
+                self.proc.stdin.flush()
+            else: 
+                self.proc.stdin.write("stop\n")
+                self.proc.stdin.flush()
 
         self.start_btn.configure(text=self.start_btn_text,fg_color = "green", state = "disabled")
         
         self.quality_box.configure(state="normal")
         self.quality_box.set("")
         self.quality_box.configure(values=[])
-        self.quality_box.set(self.quality_box_text)
+        if close is True:
+            self.quality_box.set(self.quality_box_text)
         self.quality_box.configure(state = "disabled")
         
         self.url_entry.configure(state="normal")
@@ -125,7 +130,8 @@ class tab_twitch():
         self.url_entry.configure(state="disabled")
         self.chat_checkbox.configure(state="disabled")
         self.confirm_btn.configure(state="disabled")
-        self.reset_button.configure(state="disabled")
+        if self.dop_config.get("Reset_close_mode") is not True:
+            self.reset_button.configure(state="disabled")
 
     def check_core_ready(self):
         queues = []

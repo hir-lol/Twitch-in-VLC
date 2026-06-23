@@ -240,6 +240,9 @@ def main():
                 print("[INFO] Закрытие чата")
                 kill_process(str(chat_proc.pid))
             return
+        elif line.strip() == "stop":
+            print("[INFO] Полученая команда закрытия без закрытия VLC")
+            return
 
 if __name__ == "__main__":
     print("[INFO] Старт ядра")

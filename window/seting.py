@@ -180,13 +180,25 @@ class dop_setting():
             self.Reset_var = ctk.BooleanVar(value=True)
         else: 
             self.Reset_var = ctk.BooleanVar()
-        self.Reset_CheckBox = ctk.CTkCheckBox(self.Main_Frame,text="Кнопка очистики очещает всегда",variable=self.Reset_var)
-        self.Reset_tooltip = tooltip("Кнопка очистки очищает поле ввода никнейма/ссылки всегда",self.app,self.Reset_CheckBox)
+        self.Reset_CheckBox = ctk.CTkCheckBox(self.Main_Frame,text="Кнопка очистики сбрасывает никнейм",variable=self.Reset_var)
+        self.Reset_tooltip = tooltip("Кнопка очистки очищает поле ввода никнейма/ссылки",self.app,self.Reset_CheckBox)
         self.Reset_CheckBox.pack(pady=7,padx=5,anchor="w")
         self.var.append({
             "tip" : "Reset_mode",
             "var" : self.Reset_var
-        })
+        }) 
+
+        if self.mods.get("Reset_close_mode") is True:
+            self.Reset_close_var = ctk.BooleanVar(value=True)
+        else: 
+            self.Reset_close_var = ctk.BooleanVar()
+        self.Reset_close_CheckBox = ctk.CTkCheckBox(self.Main_Frame,text="Другое поведение кнопки очистки",variable=self.Reset_close_var)
+        self.Reset_close_tooltip = tooltip("Кнопка очистки сбрасывает состояние запущеного стрима но не закрывает его\nСработает когда ядро уже запустилось",self.app,self.Reset_close_CheckBox)
+        self.Reset_close_CheckBox.pack(pady=7,padx=5,anchor="w")
+        self.var.append({
+            "tip" : "Reset_close_mode",
+            "var" : self.Reset_close_var
+        })         
 
         if self.mods.get("Close_mode") is True:
             self.Close_var = ctk.BooleanVar(value=True)
