@@ -60,7 +60,7 @@ jobs:
         shell: pwsh 
 
       - name: Move root 
-        run: Move-Item dist\* build_output\
+        run: Move-Item "dist\Twitch in VLC\*" build_output\
         shell: pwsh 
 
       - name: Create Zip
