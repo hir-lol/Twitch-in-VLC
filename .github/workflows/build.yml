@@ -37,11 +37,11 @@ jobs:
         shell: pwsh
 
       - name: Copy scripts
-        run: Copy-Item scripts build_output\-Recurse
+        run: Copy-Item scripts build_output\ -Recurse
         shell: pwsh 
 
       - name: Copy assets
-        run: Copy-Item assets build_output\-Recurse
+        run: Copy-Item assets build_output\ -Recurse
         shell: pwsh 
 
       - name: Debug
