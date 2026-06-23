@@ -43,6 +43,10 @@ jobs:
         run: Copy-Item assets build_output\-Recurse
         shell: pwsh 
 
+      - name: Debug
+        run: ls
+        shell: pwsh  
+
       - name: Delete core.py
         run: Remove-Item build_output\scripts\core.py -Force
         shell: pwsh  
