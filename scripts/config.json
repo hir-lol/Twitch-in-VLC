@@ -2,10 +2,21 @@
     "VLC_PATH": "",
     "CHATTERINO_PATH": "",
     "chat": "",
-    "mode": ["module"],
+    "mode": [
+        "portable",
+        "twitch"
+    ],
     "channel": "",
     "kach": "",
     "otv": "",
     "URL": "",
-    "URL_KACH": ""
+    "URL_KACH": "",
+    "More_Setting": {
+        "Dark_Theme": false,
+        "Team_mode": false,
+        "Reset_mode": false,
+        "Reset_close_mode": false,
+        "Close_mode": false,
+        "Custom_arg": []
+    }
 }
