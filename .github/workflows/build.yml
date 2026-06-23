@@ -1,0 +1,66 @@
+name: Auto-build
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  builds:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+          cache: "pip"
+
+      - name: Install lib
+        run: pip install -r requirements.txt
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller
+
+      - name: core.py -> core.exe
+        run: pyinstaller --noconfirm --onefile --windowed --name "core" --collect-submodules "streamlink.plugins" --copy-metadata "streamlink"  "\scripts\core.py" 
+
+      - name: Build root
+        run: pyinstaller --noconfirm --onedir --windowed --icon "assets\ICON.ico" --name "Twitch in VLC"  --collect-submodules "streamlink.plugins" --copy-metadata "customtkinter" --copy-metadata "aiohttp" --copy-metadata "streamlink" --copy-metadata "pillow"  "guiV2.py"
+
+      - name: Create root dir
+        run: mkdir build_output
+        shell: pwsh
+
+      - name: Copy scripts
+        run: Copy-Item scripts build_output\-Recurse
+        shell: pwsh 
+
+      - name: Copy assets
+        run: Copy-Item assets build_output\-Recurse
+        shell: pwsh 
+
+      - name: Delete core.py
+        run: Remove-Item build_output\scripts\core.py -Force
+        shell: pwsh  
+
+      - name: Move core.exe
+        run: Move-Item dist\core.exe build_output\scripts\
+        shell: pwsh 
+
+      - name: Move root 
+        run: Move-Item dist\* build_output\
+        shell: pwsh 
+
+      - name: Create Zip
+        run: Compress-Archive -Path build_output\* -DestinationPath Twitch_in_VLC.zip
+        shell: pwsh 
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with: 
+          draft: true
+          files: Twitch_in_VLC.zip

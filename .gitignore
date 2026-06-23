@@ -13,3 +13,4 @@ output/
 .idea/ 
 
 *.pyw
+*.db
