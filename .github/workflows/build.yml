@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
 
 jobs:
   builds:
@@ -44,7 +45,7 @@ jobs:
         shell: pwsh 
 
       - name: Debug
-        run: ls
+        run: ls build_output\scripts
         shell: pwsh  
 
       - name: Delete core.py
