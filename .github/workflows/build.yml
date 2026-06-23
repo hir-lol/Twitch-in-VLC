@@ -45,7 +45,7 @@ jobs:
         shell: pwsh 
 
       - name: Debug
-        run: ls build_output\scripts
+        run: ls build_output\
         shell: pwsh  
 
       - name: Delete core.py
