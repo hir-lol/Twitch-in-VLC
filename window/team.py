@@ -2,11 +2,14 @@ import customtkinter as ctk
 from PIL import Image
 from tools import *
 import storage
+import logging
 
 from .info import info_channels
+log = logging.getLogger(__name__)
 
 class info_team():
     def __init__(self,app):
+        log.debug("Создание окна информации для сообществ")
         self.main_app = app
         self.app = ctk.CTkToplevel(app)
         self.app.title("Информация о сообществе")
@@ -84,14 +87,14 @@ class info_team():
             self.mode = False
 
     def activate_lef_btn(self, channel: str):
-        print("Вписываем и нажимаем кнпоку")
+        log.info(f"Получение качеств из сообществ для {channel}")
         self.url_entry.delete(0, ctk.END)
         self.url_entry.insert(0, channel)
         self.on_channel_confirm()
         self.tab()
 
     def delete_channels (self, channel: str):
-        print("DELETE")
+        log.info(f"Удаление канала {channel} из сообщества")
         list_channels = (storage.read_tabs()).get(self.tabview.get())
         if channel in list_channels:
             list_channels.remove(channel)
@@ -99,7 +102,7 @@ class info_team():
         self.update_list_tabview(self.tabview.get())
 
     def create_channel_row(self, parent, channel: str, data: dict):
-        print(f"Создаю контейнер для {channel}")
+        log.debug(f"Создание контейнера для {channel}")
         row_frame = ctk.CTkFrame(parent)
         row_frame.pack(fill="x",padx=5,pady=2)
 
@@ -183,6 +186,7 @@ class info_team():
             self.tabs_click_count[name_tab] = 0
 
     def update_list_tabview(self, name_tab: str):
+        log.info(f"Обновление информации для {name_tab}")
         self.container_tab = self.tabs_frame.get(name_tab)
         if self.container_tab == None:
             show_error("Ошибка","Произошла ошибка при обновлении содержимого вкладки\nПроверьте существует ли содержимое для данной вкладки")
@@ -201,7 +205,7 @@ class info_team():
         name_tab = self.tabview.get()
         if data[0] == "done":
             self.tabview_status = [False]
-            print("Обновление списка завершено")
+            log.info("Обновление списка завершено")
             return            
         elif data[0] not in self.tabs.get(name_tab):
             self.key = data[0]
@@ -210,7 +214,9 @@ class info_team():
         MainConfig.chek_queue(self.key, self.update)    
 
     def add_in_tabs(self,app):
+        log.info("Добавление сообщества во вкладу")
         if self.team_info == None:
+            log.warning("Попытка добавить пустоту")
             show_error("Ошибка при добавлении в сохранёное","Нечего добовлять")
             return
         self.data = storage.read_tabs()
@@ -221,7 +227,9 @@ class info_team():
         self.tab()
 
     def add_in_saves_if(self):
+        log.info("Попытка добавление каналов в сохраёное если они отсутсвуют")
         if self.team_info == None:
+            log.warning("Неудачная попытка добавления каналов в сохранёные, нечего добавлять")
             show_error("Ошибка при добавлении в сохранёное","Нечего добовлять")
             return
         channels = storage.read_channels()
@@ -231,11 +239,14 @@ class info_team():
             if item.lower() not in list_lower:
                 channels.append(item)
                 list_lower.add(item.lower())
+                log.info(f"Добавлен в сохранёные канал {item.lower()}")
         storage.edit_channels(channels)
         self.tab()
 
     def add_in_saves(self):
+        log.info("Попытка добавление каналов в сохраёное")
         if self.team_info == None:
+            log.warning("Неудачная попытка добавления каналов в сохранёные, нечего добавлять")
             show_error("Ошибка при добавлении в сохранёное","Нечего добовлять")
             return
         channels = storage.read_channels()
@@ -245,6 +256,11 @@ class info_team():
 
     def get_team(self, frame,app):
         team = self.entry_channels.get().strip().lower()
+        if not team:
+            log.warning("Ошибка при получении каналов в сообществе, не ведено название сообщества")
+            show_error("Ошибка","Ведите название сообщества")
+            return
+        log.info(f"Получение каналов в сообществе {team}")
         #self.team_info = asyncio.run(storage.get_team(team))
         MainConfig.qapi.put({
             "source": "get_team",
@@ -256,7 +272,7 @@ class info_team():
         self.plays_button_image = ctk.CTkImage(light_image = Image.open(get_base_path()+"/assets/plays.png"), dark_image = Image.open(get_base_path()+"/assets/plays.png"), size = (20,20))
         self.add_button_image = ctk.CTkImage(light_image = Image.open(get_base_path()+"/assets/add.png"), dark_image = Image.open(get_base_path()+"/assets/add.png"), size = (20,20))
         for channel in team_info:
-            print(f"Создаю для {channel}")
+            log.debug(f"Создание для {channel}")
             self.draw_channel(channel=channel,frame=frame,app=app)
 
     def draw_channel(self, channel: str, frame, app):
@@ -283,6 +299,7 @@ class info_team():
         play_channel_button.configure(command=lambda:self.is_lives(button=play_channel_button,channel=channel,tooltip=play_channel_button_tooltip))
 
     def add_channel_in_saves(self,channel: str,tooltip: tooltip):
+        log.info(f"Добавление канала {channel} в сохранёные")
         saves = storage.read_channels()
         saves.append(channel)
         storage.edit_channels(saves)
@@ -312,7 +329,7 @@ class info_team():
             self.status_channel[channel] = status_new
 
     def chek_info_channel(self,channel: str):
-        print(f"Вписываю {channel} в поле")
+        log.info(f"Отправка канала {channel} в окно информации об накале")
         self.communicate_object.delete(0, ctk.END)
         self.communicate_object.insert(0, channel)
         self.tab()

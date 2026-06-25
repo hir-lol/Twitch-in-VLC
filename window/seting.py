@@ -3,12 +3,16 @@ from tools import *
 import webbrowser
 from tkinter import filedialog
 from PIL import Image
+import logging
+
+log = logging.getLogger(__name__)
 
 class add_arg_setting():
     """
     Класс для окна с аргументами запуска streamlink
     """
     def __init__(self, app=ctk.CTk):
+        log.debug("Создание окна доп аргументов")
         self.arg_app = ctk.CTkToplevel(app)
         self.arg_app.title("Дополнительные аргументы")
         self.arg_app.geometry("350x310")
@@ -38,6 +42,7 @@ class add_arg_setting():
         self.draw_arg()
 
     def get_var(self) -> dict:
+        log.debug("Выдача информации об дополнительных аргументов")
         args = []
         for item in self.var :
             arg = {
@@ -54,17 +59,18 @@ class add_arg_setting():
             show_error("Запрещено","Нельзя добавить пустоту")
             return
         self.entry_arg.delete(0, ctk.END)
-        print("Сохранение:",arg)
+        log.info(f"Сохранение дополнительного аргумента: {arg}")
         arg_dict = {"text" : arg}
         self.args.append(arg_dict)
         self.draw_arg()
 
-    def check_arg(self):            
+    def check_arg(self):
+        log.info("Чтение дополнительных аргументов")
         try:
             args = MainConfig.config.get("More_Setting")
             self.args = args.get("Custom_arg")
-        except Exception as e:
-            print("ERROR in add_arg_setting:",e)
+        except Exception:
+            log.exception("Ошибка при чтении дополнительных аргументов")
             self.args = []
 
     def draw_arg(self):
@@ -72,7 +78,7 @@ class add_arg_setting():
             widget.destroy()
         if self.args is None:
             self.args = []
-        print("Начало отрисовки аргументов")
+        log.info("Начало отрисовки аргументов")
         self.var = []
         for arg in self.args:
             try:
@@ -80,7 +86,7 @@ class add_arg_setting():
                 value = arg.get("value") 
                 arg_tooltip = arg.get("tooltip")
 
-                print("Отрисовка для",text)
+                log.info(f"Отрисовка для {text}")
 
                 if value is True:
                     vars = ctk.BooleanVar(value=True)
@@ -99,10 +105,10 @@ class add_arg_setting():
 
                 self.var.append(saves)
 
-            except Exception as e :
+            except Exception:
                 show_error("Ой","Ошибка при создании виджетов для аргументов")
-                print("ERROR при отресовки:\n", e)
-        print("Конец отрисовки")
+                log.exception("Ошибка при создании виджета для доп аргументов")
+        log.info("Конец отрисовки")
 
     def arg_tab(self):
         if self.arg_app_tab is False:
@@ -117,6 +123,7 @@ class dop_setting():
     Класс для дополнительных настроек по нажатию
     """
     def __init__(self, app=ctk.CTkFrame, mode=str):
+        log.debug("Создание контейнера для дополнительных настроек")
         self.var=[]
         self.tab_in = False
         self.app = app
@@ -128,15 +135,17 @@ class dop_setting():
         self.Add_Setting_Objects()
 
     def get_config(self):
+        log.info("Чтение информации об дополнительных настройках")
         try:
             self.mods = MainConfig.config.get("More_Setting")
             if self.mods is None:
                 self.mods = {}
         except Exception as e :
             self.mods = {}
-            print("ERROR in dopsetting/get_config:\n",e)
+            log.exception("Ошибка чтения информации об дополнительных настройках")
 
     def get(self) -> dict:
+        log.info("Выдача информации об дополнительных настройках")
         arg = {}
         for item in self.var:
             arg[item.get("tip")] = (item.get("var")).get()
@@ -148,6 +157,7 @@ class dop_setting():
         return arg
 
     def Add_Setting_Objects(self):
+        log.debug("Отрисовка дополнительных настроек")
         self.Main_Frame = ctk.CTkFrame(self.app)
 
         if self.mods.get("Dark_Theme") is True:
@@ -250,9 +260,9 @@ class dop_setting():
                 self.Main_Frame.pack_forget()
                 self.Main_Button.configure(image=self.Image_close)
                 self.tab_in = False
-        except Exception as e :
+        except Exception:
             show_error("Ошибка","Ошибка при раскрытии контейнера с доп настройками")
-            print("[ERROR] Seting/dop_setting/tab :\n", e)
+            log.exception("Ошибка при раскрытии контейнера с доп настройками")
 
     def Add_Main_Objects(self):
         self.Main_Frame_Button = ctk.CTkFrame(self.app)
@@ -275,6 +285,7 @@ class dop_setting():
 
 class setings_tabs():
     def __init__ (self, app, container):
+        log.debug("Создание окна настроек")
         self.app = app            
         self.container = container
         ctk.CTkLabel(container, text="Путь к VLC").pack(anchor="w")
@@ -388,10 +399,11 @@ class setings_tabs():
             self.tooltip_streamlink_download_button = tooltip(text="Должен находится в системном PATH\nили находится в папке core",app=app,bind=self.streamlink_download_button)
 
     def open_url(self, url: str):
+        log.debug(f"Открытие ссылки {url} в браузере")
         webbrowser.open(url)
 
     def browse_exe(self, entry_widget):
-        print("Вызов обзора файлов")
+        log.info("Вызов обзора файлов")
         path = filedialog.askopenfilename(
             title="Выбор файла",
             filetypes=[("Executable files", "*.exe"), ("All files", "*.*")]
@@ -402,7 +414,7 @@ class setings_tabs():
             entry_widget.insert(0, path)
 
     def save_settings(self):
-        print("Сохранение настроек")
+        log.info("Сохранение настроек")
         MainConfig.config["VLC_PATH"] = self.vlc_entry.get()
         if MainConfig.config.get("chat") != "Браузер":
             MainConfig.config["CHATTERINO_PATH"] = self.chat_entry.get()

@@ -1,12 +1,42 @@
 import customtkinter as ctk 
-
+import logging
 from PIL import Image
 
 from tools import *
 from window import *
+
+log = logging.getLogger("guiV2")
 #=======================
 #ФУНКЦИИ
 #=======================
+
+class MyFilter(logging.Filter):
+    def filter(self,record):
+        # print(record.name, record.module)
+        return record.name.startswith(("guiV2","tray","tools","window","storage"))
+    
+def configure_logging (level = logging.INFO):
+    root = logging.getLogger()
+    format = logging.Formatter(
+        datefmt="%Y-%m-%d %H:%M:%S",
+        #fmt="[%(asctime)s] %(name)5s/%(funcName)s:%(lineno)-3d %(levelname)-5s - %(message)s",
+        fmt="[%(asctime)s] %(name)5s: %(lineno)-3d %(levelname)-5s - %(message)s",
+    ) 
+
+    console = logging.StreamHandler()
+    console.setLevel(level)
+    console.setFormatter(format)
+    console.addFilter(MyFilter())
+
+    file = logging.FileHandler("log.log",mode="w",encoding="utf-8")
+    file.setLevel(level)
+    file.setFormatter(format)
+    file.addFilter(MyFilter())
+
+    root.addHandler(console)
+    root.addHandler(file)
+
+    root.setLevel(level)
 
 def main():
     
@@ -32,10 +62,10 @@ def main():
         
         if tab == 'Главный экран':
             app.geometry("300x310")
-            print("Смена вкладки на Главный экран 300x260")
+            log.debug("Смена вкладки на Главный экран 300x260")
         elif tab == 'Настройки':
             app.geometry("500x420")
-            print("Смена вкладки на Настройки 500x420")    
+            log.debug("Смена вкладки на Настройки 500x420")    
 
 #===========================
 #СОЗДАНИЕ ОКНА И ВКЛАДОК
@@ -176,4 +206,5 @@ def main():
     app.mainloop()
 
 if __name__ == "__main__":
+    configure_logging(logging.DEBUG)
     main()

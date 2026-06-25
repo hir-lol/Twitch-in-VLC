@@ -4,9 +4,13 @@ import customtkinter as ctk
 from PIL import Image
 import shutil
 from tools import *
+import logging
+
+log = logging.getLogger(__name__)
 
 class tab_twitch():
     def __init__(self, app, window):
+        log.debug("Создание окна")
         self.start_btn_text = "Start stream"
         self.stop_btn_text = "Stop stream"
         self.quality_box_text = "Подтвердите ник снова"
@@ -62,14 +66,14 @@ class tab_twitch():
         self.qualites_state = False
 
     def reset(self):
-        print("Нажата кнопка сброса")
+        log.info("Нажата кнопка сброса")
         if self.stream_running is True:
             if self.dop_config.get("Reset_close_mode") is True and self.core_ready is True:
                 self.active_strim_btn(False)
             else:
                 return
         elif self.qualites_state is True :
-            print("Очистка ведённых данных")
+            log.debug("Очистка полученых данных")
 
             self.confirm_btn.configure(state="normal")
             self.quality_box.set("")
@@ -83,12 +87,16 @@ class tab_twitch():
             self.url_entry.delete(0, ctk.END)
 
     def active_strim_btn(self,close: bool = True):
+        log.debug("Нажата кнопка Start")
         if not self.stream_running:
+            log.info("Запуск стрима")
             self.stream_running = True
             self.start_stream()
         else:
+            log.info("Остановка стрима")
             if self.core_ready is False:
                 show_error("Ошибка","Ядро ещё не запустилось для закрытия")
+                log.warning("Ядро не готово к закрытию")
                 return
             self.stop_stream(close)
             self.stream_running = False
@@ -142,6 +150,7 @@ class tab_twitch():
             elif line.get("source") == "core":
                 line = line.get("value")
                 if line and line == "PROCESS_CLOSED" and self.proc.poll() != None:
+                    log.warning("Ядро закрылось раньше чем ожидалось")
                     self.core_ready = True
                     self.core_error = True
                     self.active_strim_btn()
@@ -149,6 +158,7 @@ class tab_twitch():
                     show_error("Ой","Кажется ядро закрылось раньше чем ожидалось")
                     return
                 if line and "ready" in line:
+                    log.info("Ядрл готово к закрытию")
                     self.core_ready = True
                     self.core_error = False
                     self.core_ready_tooltip.unbinds()
@@ -208,8 +218,10 @@ class tab_twitch():
             self.start_btn.configure(state="disabled")
 
     def on_channel_confirm(self):
+        log.info("Запрос качеств")
         if (self.config.get("mode"))[0] =="portable":
             if not shutil.which("streamlink"):
+                log.error("Streamlink не найден")
                 show_error("Streamlink не найден","Streamlink не обнаружен в PATH\nУстановите Streamlink и перезапустите программу")
                 return
         
@@ -219,7 +231,7 @@ class tab_twitch():
             channel = self.url_entry.get().strip()
 
         if not channel:
-            print("Введите никнейм")
+            log.warning("Попытка запроса качеств при ведёном пустом поле")
             show_error("Ошибка названия", "Введите никнейм/название а не пустое поле")
             return
 
@@ -237,12 +249,13 @@ class tab_twitch():
         self.communicate.chek_queue("kach", self.edit_qualities)
 
     def edit_qualities(self, qualities: list):
-
+        log.info("Получены качества")
         if not qualities or qualities[0] == "offline" or qualities[0] == "error":
+            log.warning("Полученные качества содержут ошибку")
             if not qualities:
                 pass
             else:
-                print(qualities[1])
+                log.warning(qualities[1])
             show_error("Ошибка проверки доступных качеств", "Не удалось получить настройки качества, возможно эфир офлайн.\n Или видён некоректный никнейм/название")
             self.quality_box.configure(state = "normal")
             self.quality_box.set("")

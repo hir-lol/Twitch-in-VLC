@@ -2,9 +2,13 @@ import customtkinter as ctk
 from PIL import Image
 from tools import *
 import storage
+import logging
+
+log = logging.getLogger(__name__)
 
 class saves_channels():
     def __init__(self, app):
+        log.debug("Создание окна")
         self.app = ctk.CTkToplevel(app)
         self.app.title("Сохранёные")
         self.app.geometry("350x310")
@@ -50,7 +54,7 @@ class saves_channels():
             self.app.withdraw()
 
     def activate_lef_btn(self, channel: str):
-        print("Вписываем и нажимаем кнпоку")
+        log.info(f"Получение качеств из избраных для {channel}")
         self.url_entry.delete(0, ctk.END)
         self.url_entry.insert(0, channel)
         self.on_channel_confirm()
@@ -61,7 +65,7 @@ class saves_channels():
         self.on_channel_confirm = communicate_def
 
     def delete_channels (self, channel: str):
-        print("DELETE")
+        log.info(f"Удаление канала их избраных {channel}")
         list_channels = storage.read_channels()
         if channel in list_channels:
             list_channels.remove(channel)
@@ -69,7 +73,7 @@ class saves_channels():
         self.update_list_channels()
 
     def create_channel_row(self, parent, channel: str, data: dict):
-        print(f"Создаю контейнер для {channel}")
+        log.debug(f"Создание контейнера для {channel}")
         row_frame = ctk.CTkFrame(parent)
         row_frame.pack(fill="x",padx=5,pady=2)
 
@@ -136,22 +140,21 @@ class saves_channels():
     def edit_channels_activate(self):
         channel_name = self.placeholder_channels.get().strip()
         if not channel_name:
-            print('пусто')
+            log.warning("Попытка добавления канала в избраное при пустом поле ввода")
             return
-        
+        log.info(f"Добавление канала в избраное {channel_name}")
         self.placeholder_channels.delete(0, ctk.END)
-        print("сохраняю")
         channels_list = storage.read_channels()
         channels_list.append(channel_name)
         storage.edit_channels(channels_list)
         self.update_list_channels()
 
     def update_list_channels(self):
-        print("Обновляется список")
+        log.info("Обнавление информации")
         for widget in self.middle_frame.winfo_children():
             widget.destroy()
-        channels_list = storage.read_channels()
-        if channels_list == None:
+        self.channels_list = storage.read_channels()
+        if self.channels_list == None:
             return
         self.placeholder_channels.configure(placeholder_text="Обновляется список")
         self.placeholder_channels.configure(state = "disabled")
@@ -159,7 +162,7 @@ class saves_channels():
         self.update_channels_button.configure(state = "disabled")
         MainConfig.qapi.put({
             "source" : "channels_info",
-            "value" : ["saves",channels_list]
+            "value" : ["saves",self.channels_list]
         })
         MainConfig.chek_queue("info_channel_key", self.update)        
 
@@ -169,7 +172,7 @@ class saves_channels():
             self.Button_channels.configure(state = "normal")
             self.update_channels_button.configure(state = "normal")
             return
-        elif data[0] not in storage.read_channels():
+        elif data[0] not in self.channels_list:
             self.keys = data[0]
         else:
             self.create_channel_row(self.middle_frame,channel=data[0],data=data[1])

@@ -7,18 +7,23 @@ import queue
 import storage
 import threading
 import subprocess
+import ctypes 
+import logging
 
+log = logging.getLogger(__name__)
 __all__ = ("load_config","get_base_path","show_error","MainConfig","tooltip","resorse_path")
 
 def load_config(CONFIG_FILE):
+    log.info(f"Чтение json файла по пути: {CONFIG_FILE}")
     if not os.path.exists(CONFIG_FILE):
+        log.error("Не нашёлся файл для чтения")
         return {}
 
     try:
         with open(CONFIG_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception as e:
-        print("Ошибка чтения config.json:", e)
+        log.exception("Ошибка чтения config.json")
         return {}
 
 def get_base_path():
@@ -31,17 +36,29 @@ def resorse_path(relative_path):
         return os.path.join(sys._MEINPASS , relative_path)
     return os.path.join(os.path.abspath("."), relative_path)
 
-def show_error(title: str, message: str):
-    root = Tk()
-    root.withdraw() #Скрытие пустого окна
-    messagebox.showerror(title, message)
-    root.destroy()
+_u32 = ctypes.windll.user32
+_u32.MessageBoxW.argtypes = [ctypes.c_void_p, ctypes.c_wchar_p, ctypes.c_wchar_p, ctypes.c_uint]
+_u32.MessageBoxW.restype = ctypes.c_int
+
+_MB_YESNO_Q = 0x24
+_MB_OR_ERR = 0x10
+_IDYES = 6
+
+def show_error(title: str, message: str,tkinter: bool = False):
+    if tkinter is True:
+        root = Tk()
+        root.withdraw() #Скрытие пустого окна
+        messagebox.showerror(title, message)
+        root.destroy()
+    else:
+        _u32.MessageBoxW(0,message,title,_MB_OR_ERR)
 
 class Config():
     """
     Класс для общения информацией между другими классами
     """
     def __init__ (self,app = None):
+        log.debug("Иницилизация класса")
         self.CONFIG_FILE = os.path.join(get_base_path()+"/scripts/config.json")
         self.icon = (get_base_path() + "/assets/ICON.ico")
                 
@@ -54,16 +71,17 @@ class Config():
         self.app = app
 
     def save_config(self):
+        log.info("Сохранение конфиг файла")
         try:
             with open(self.CONFIG_FILE, "w", encoding = "utf-8") as f:
                 json.dump(self.config, f, indent=4,ensure_ascii=False)
         except Exception as e:
             show_error("Ошибка","Ошибка при сохранении конфига")
-            print("[ERROR] in MainConfig/save_config, \n",e)
+            log.exception("Ошибка при сохранении конфиг файла")
 
     def chek_queue (self, keys: str, callback):
         if self.app is None:
-            print("[ERROR] in MainConfig/chek_queue is None")
+            log.error("Невозможно проверить очередь")
             return
         status = False
         line_queue = []
@@ -83,6 +101,7 @@ class Config():
             self.app.after(100,lambda: self.chek_queue(keys, callback))
 
     def get_available_qualities (self, twitch_url: str, mode: str):
+        log.debug(f"Получение качеств у {twitch_url}")
         if mode == "module":
             threading.Thread(target=lambda: self.module(twitch_url),daemon=True).start()
         else:
@@ -116,7 +135,7 @@ class Config():
             })
             return
         except subprocess.CalledProcessError as e:            
-            print(e)
+            log.exception("Streamlink выдал исключение при запросе качеств")
             error_text = (e.stderr or e.stdout or"").strip()
             if "No playable streams" in error_text:
                 status = "offline"

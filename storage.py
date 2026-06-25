@@ -5,6 +5,9 @@ import aiohttp
 import asyncio
 import time
 import threading
+import logging
+
+log = logging.getLogger(__name__)
 
 def get_base_path():
     if getattr(sys, 'frozen', False):
@@ -12,41 +15,48 @@ def get_base_path():
     return os.path.dirname(os.path.abspath(__file__))
 
 def load_storage():
+    log.debug("Чтение storage.json")
     CONFIG_FILE = os.path.join(get_base_path()+"/scripts/storage.json")
     try:
         with open(CONFIG_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception as e:
-        print("Ошибка чтения config.json:", e)
+        log.exception("Ошибка чтения storage.json")
 
 def save_storage(data : dict) -> None:
+    log.debug("Запись storage.json")
     CONFIG_FILE = os.path.join(get_base_path()+"/scripts/storage.json")
     try:
         with open(CONFIG_FILE, "w", encoding="utf-8") as f:
             json.dump(data , f , indent = 2)
     except Exception as e:
-        print("Ошибка записи storage.json:", e)
+        log.exception("Ошибка записи storage.json")
 
 def read_tabs():
+    log.debug("Чтение сохранёных сообществ")
     storage = load_storage()
     return storage.get("tabs")
 
 def edit_tabs(data: list):
+    log.debug("Добавление сохранёного сообщества")
     storage = load_storage()
     storage["tabs"] = data 
     save_storage(storage)
 
 def read_channels():
+    log.debug("Чтение мзбраных каналов")
     storage = load_storage()
     return storage.get("channels")
 
 def edit_channels(data: list[str]):
+    log.debug("Сохранение избраных каналов")
     storage = load_storage()
     storage["channels"] = data 
     save_storage(storage)
 
 class ApiWorker():
     def __init__(self,queue_request,queue_result):
+        log.debug("Иницилизация класса")
         self.queue_request = queue_request 
         self.queue_result = queue_result
         self._read_limit()
@@ -90,44 +100,42 @@ class ApiWorker():
                 asyncio.create_task( self.get_channels_info(session = s,keys = value[0], channels = value[1]))
 
     async def get_channels_info(self, keys: str, channels: list, session: aiohttp.ClientSession):
-            keys = str("info_channel_" + keys)
-            self.queue_result.put({
-                "source" :"info_channel_key",
-                "value" : [keys]
-            })
-            if self.queue_limit is None:
-                import queue
-                self.queue_limit = queue.Queue()
-            for ch in channels:
-                print(f"Отправка запросов для {ch}")
-                asyncio.create_task(self.get_parameters_channels(ch, session, keys))
-                await asyncio.sleep(0.5)
-            list_request = []
-            len_list = len(channels)
-            ready = 0
-            while True:
-                while not self.queue_limit.empty():
-                    request = self.queue_limit.get()
-                    try:
-                        if request.get("source") != keys:
-                            list_request.append(request)
-                            continue
-                    except Exception as e:
-                        list_request.append(request)
-                        continue
-                    ready += 1
+        log.debug("Получение данных для списка каналов")
+        keys = str("info_channel_" + keys)
+        self.queue_result.put({
+            "source" :"info_channel_key",
+            "value" : [keys]
+        })
+        if self.queue_limit is None:
+            import queue
+            self.queue_limit = queue.Queue()
+        for ch in channels:
+            log.debug(f"Отправка запросов для {ch}")
+            asyncio.create_task(self.get_parameters_channels(ch, session, keys))
+            await asyncio.sleep(0.5)
+        list_request = []
+        len_list = len(channels)
+        ready = 0
+        while True:
+            while not self.queue_limit.empty():
+                request = self.queue_limit.get()
+                if request.get("source") != keys:
+                    list_request.append(request)
+                    continue
+                ready += 1
 
-                    if ready == len_list :
-                        self.queue_result.put({
-                            "source": keys,
-                            "value": ["done"]
-                        })
-                        return
-                for request in list_request:
-                    self.queue_limit.put(request)
-                await asyncio.sleep(5)
+                if ready == len_list :
+                    self.queue_result.put({
+                        "source": keys,
+                        "value": ["done"]
+                    })
+                    return
+            for request in list_request:
+                self.queue_limit.put(request)
+            await asyncio.sleep(5)
 
     async def get_team(self, session: aiohttp.ClientSession, team: str):
+        log.debug(f"Получение каналов в сообществе {team}")
         try:
             url_team = f"https://decapi.me/twitch/team_members/{team}"
             async with session.get(url_team) as r:
@@ -143,6 +151,7 @@ class ApiWorker():
             })        
 
     async def is_lives(self, session: aiohttp.ClientSession, channel :str):
+        log.debug(f"Проверка на стрим у {channel}")
         try:
             url_viewercount = f"https://decapi.me/twitch/viewercount/{channel}"
             async with session.get(url_viewercount) as r:
@@ -180,7 +189,7 @@ class ApiWorker():
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             lives = "error"
             request = 1
-            print(f"Ошибка получения для {channels}, отправление в очередь, текст ошибки {e}")
+            log.warning(f"Ошибка получения для {channels}, отправление в очередь, текст ошибки {e}")
         if lives is True:
             try:
                 async with session.get(url_title) as r:
@@ -225,7 +234,7 @@ class ApiWorker():
             self.reset_time = now + 60
         if self.request >= self.limit:
             sleep_time = self.reset_time - now
-            print(f"Привышен лимит, ожидание :{sleep_time}")
+            log.warning(f"Привышен лимит, ожидание :{sleep_time}")
             if self.queue_limit is not None:
                 self.queue_limit.put({
                     "source": "limit",

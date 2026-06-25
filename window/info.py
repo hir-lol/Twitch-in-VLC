@@ -1,8 +1,12 @@
 import customtkinter as ctk 
 from tools import *
+import logging
+
+log = logging.getLogger(__name__)
 
 class info_channels():
     def __init__(self,app):
+        log.debug("Создание окна")
         self.app = ctk.CTkToplevel(app)
         self.app.title("Информация о канале")
         self.app.geometry("350x310")
