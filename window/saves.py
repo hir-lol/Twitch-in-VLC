@@ -86,6 +86,7 @@ class saves_channels():
         left_btn.pack(side="left",padx=5)
 
         channel_name_label = ctk.CTkLabel(top_frame,text=channel)
+        channel_name_label.pack(side="left",padx=(5,10))
 
         is_live = data.get("lives")
         if is_live == True:
@@ -94,8 +95,6 @@ class saves_channels():
             status_text = "Ошибка"
         else:
             status_text = "Офлайн"
-        status_label = ctk.CTkLabel(top_frame,text=status_text)
-        status_label.pack(side="right",padx=5)
 
         delete_btn = ctk.CTkButton(top_frame,image=self.delete_image,text="",width=28,height=28,fg_color="black",command=lambda:self.delete_channels(channel))
         delete_btn.pack(side="right",padx=5) 
@@ -117,7 +116,10 @@ class saves_channels():
         else:
             tracked_btn = None 
             tracked_tool = None
-        channel_name_label.pack(side="left",padx=(5,10))
+        
+        status_label = ctk.CTkLabel(top_frame,text=status_text)
+        status_label.pack(side="right",padx=5)
+        
         if is_live == True:
             left_btn.configure(fg_color="green")
 
