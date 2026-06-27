@@ -86,7 +86,6 @@ class saves_channels():
         left_btn.pack(side="left",padx=5)
 
         channel_name_label = ctk.CTkLabel(top_frame,text=channel)
-        channel_name_label.pack(side="left",padx=(5,10))
 
         is_live = data.get("lives")
         if is_live == True:
@@ -118,7 +117,7 @@ class saves_channels():
         else:
             tracked_btn = None 
             tracked_tool = None
-
+        channel_name_label.pack(side="left",padx=(5,10))
         if is_live == True:
             left_btn.configure(fg_color="green")
 
