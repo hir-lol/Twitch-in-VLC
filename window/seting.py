@@ -1,11 +1,70 @@
 import customtkinter as ctk 
-from tools import *
+from tools import * 
 import webbrowser
 from tkinter import filedialog
 from PIL import Image
 import logging
+from typing import Callable
 
 log = logging.getLogger(__name__)
+
+class Tray_seting():
+    """
+    Класс для окна настроек трея
+    """
+    def __init__(self, app=ctk.CTk):
+        self.main = app
+        log.debug("Создание окна Настроек трея")
+        self.app = ctk.CTkToplevel(app)
+        self.app.title("Настройки трея")
+        self.app.geometry("350x310")
+        self.app.after (200, lambda: self.app.iconbitmap(MainConfig.icon))
+        self.app.protocol("WM_DELETE_WINDOW", lambda: self.tab())
+        self.app_tab = False
+        self.app.withdraw()
+
+        self._read()
+        self.vars = []
+        self._draw()
+
+    def get(self) -> dict:
+        log.debug("Выдача настроек для трея")
+        arg = {}
+        for item in self.vars:
+            arg[item[0]] = (item[1]).get()
+        return arg
+
+    def _draw(self):
+        self.root = ctk.CTkScrollableFrame(self.app)
+        self.root.pack(fill="both") 
+
+        if self.seting.get("enabled") is True:
+            self.enabled_var = ctk.BooleanVar(value=True)
+        else:
+            self.enabled_var = ctk.BooleanVar()
+        self.enabled = ctk.CTkCheckBox(self.root,text="Включить иконку в трее",variable=self.enabled_var)
+        self.enabled.pack(padx=5,pady=5,anchor="w")
+        self.vars.append(["enabled",self.enabled_var])
+
+        if self.seting.get("notify") is True:
+            self.notify_var = ctk.BooleanVar(value=True)
+        else:
+            self.notify_var = ctk.BooleanVar()
+        self.notify = ctk.CTkCheckBox(self.root,text="Включить уведомления об стримах",variable=self.notify_var)
+        self.notify.pack(padx=5,pady=5,anchor="w")
+        tooltip("Включает уведомления об началах стримах и их окончаниях",self.main,self.notify)
+        self.vars.append(["notify",self.notify_var])
+
+    def _read(self):
+        self.seting = MainConfig.dop_config.get("tray")
+
+    def tab(self):
+        if self.app_tab is False:
+            self.app_tab = True
+            self.app.deiconify()
+        else :
+            self.app_tab = False 
+            self.app.withdraw()
 
 class add_arg_setting():
     """
@@ -124,12 +183,12 @@ class dop_setting():
     """
     def __init__(self, app=ctk.CTkFrame, mode=str):
         log.debug("Создание контейнера для дополнительных настроек")
+        self.Image_arg = ctk.CTkImage(light_image = Image.open(get_base_path()+"/assets/info.png"), dark_image = Image.open(get_base_path()+"/assets/info.png"), size = (20,20))
         self.var=[]
         self.tab_in = False
         self.app = app
         self.mode = mode
-        if self.mode == "portable":
-            self.add_arg_window(False)
+        self.add_dop_window(False)
         self.get_config()
         self.Add_Main_Objects()
         self.Add_Setting_Objects()
@@ -154,6 +213,7 @@ class dop_setting():
             arg["Custom_arg"] = item
         else:
             arg["Custom_arg"] = self.mods.get("Custom_arg")
+        arg["tray"] = self.app_tray.get()
         return arg
 
     def Add_Setting_Objects(self):
@@ -183,8 +243,7 @@ class dop_setting():
             "var" : self.Team_var
         })
 
-        if self.mode == "portable":
-            self.add_arg_window(True)
+        self.add_dop_window(True)
 
         if self.mods.get("Reset_mode") is True:
             self.Reset_var = ctk.BooleanVar(value=True)
@@ -223,26 +282,33 @@ class dop_setting():
             "var" : self.Close_var
         })
 
-    def add_arg_window (self, value = bool):
+    def add_dop_window (self, value = bool):
         if value is False:
-            self.app_arg = add_arg_setting(self.app)
+            if self.mode == "portable":
+                self.app_arg = add_arg_setting(self.app)
+            self.app_tray = Tray_seting(self.app)
         else:
-            self.agg_arg_frame = ctk.CTkFrame(self.Main_Frame)
-            self.agg_arg_frame.pack(pady=7,padx=5,anchor="w")
+            if self.mode == "portable":
+                self._agg_tab_frame(self.app_arg.arg_tab,"Дополнительные аргументы","Дополнительные аргументы при запуске стримов")
+            self._agg_tab_frame(self.app_tray.tab,"Настройки трея")
 
-            self.Image_arg = ctk.CTkImage(light_image = Image.open(get_base_path()+"/assets/info.png"), dark_image = Image.open(get_base_path()+"/assets/info.png"), size = (20,20))
-            self.agg_arg_Button = ctk.CTkButton(
-                self.agg_arg_frame,
-                text = "",
-                image= self.Image_arg,
-                width=20,
-                command=lambda: self.app_arg.arg_tab()
-            )
-            self.agg_arg_Button.grid(row=0,column=0,padx=5,pady=5)
+    def _agg_tab_frame(self,tabing:Callable,text:str,tooltip_text:str=None):
+        self.agg_arg_frame = ctk.CTkFrame(self.Main_Frame)
+        self.agg_arg_frame.pack(pady=7,padx=5,anchor="w")
 
-            self.agg_arg_Label = ctk.CTkLabel(self.agg_arg_frame,text="Дополнительные аргументы")
-            self.agg_arg_Label.grid(row=0,column=1,padx=5,pady=5)
-            self.agg_arg_Tooltip = tooltip("Дополнительные аргументы при запуске стримов",self.app,self.agg_arg_Label)
+        self.agg_arg_Button = ctk.CTkButton(
+            self.agg_arg_frame,
+            text = "",
+            image= self.Image_arg,
+            width=20,
+            command=lambda: tabing()
+        )
+        self.agg_arg_Button.grid(row=0,column=0,padx=5,pady=5)
+
+        self.agg_arg_Label = ctk.CTkLabel(self.agg_arg_frame,text=text)
+        self.agg_arg_Label.grid(row=0,column=1,padx=5,pady=5)
+        if tooltip_text is not None:
+            self.agg_arg_Tooltip = tooltip(tooltip_text,self.app,self.agg_arg_Label)
 
     def get_seting(self):
         value = {}
@@ -420,8 +486,11 @@ class setings_tabs():
             MainConfig.config["CHATTERINO_PATH"] = self.chat_entry.get()
         MainConfig.config["chat"] = self.chat.get()
         MainConfig.config["mode"] = [self.mode.get(),(MainConfig.config.get("mode"))[1]]
-        MainConfig.config["More_Setting"] = self.dop_setting.get()
+        dop_setting = self.dop_setting.get()
+        MainConfig.config["More_Setting"] = dop_setting
+        MainConfig.dop_config = dop_setting
         MainConfig.save_config()
         for widget in self.container.winfo_children():
             widget.destroy()
         self.app.after(100, lambda: self.__init__(self.app,self.container))
+        show_info("Пременение настроек","Чтобы настройки вступили в силу перезапустите приложение")

@@ -43,6 +43,8 @@ class saves_channels():
 
         self.delete_image = ctk.CTkImage(light_image = Image.open(get_base_path()+"/assets/delete.png"), dark_image = Image.open(get_base_path()+"/assets/delete.png"))
         self.play_image = ctk.CTkImage(light_image = Image.open(get_base_path()+"/assets/play.png"), dark_image = Image.open(get_base_path()+"/assets/play.png"))
+        self.push_image = ctk.CTkImage(light_image = Image.open(get_base_path()+"/assets/push.png"), dark_image = Image.open(get_base_path()+"/assets/push.png"))
+        self.no_push_image = ctk.CTkImage(light_image = Image.open(get_base_path()+"/assets/no_push.png"), dark_image = Image.open(get_base_path()+"/assets/no_push.png"))
 
     def tab(self):
         if not self.app_tab:
@@ -81,10 +83,10 @@ class saves_channels():
         top_frame.pack(fill="x")
 
         left_btn = ctk.CTkButton(top_frame,image=self.play_image,text="",width=28,height=28,command=lambda:self.activate_lef_btn(channel))
-        left_btn.pack(side="left",padx=(5,10))
+        left_btn.pack(side="left",padx=5)
 
         channel_name_label = ctk.CTkLabel(top_frame,text=channel)
-        channel_name_label.pack(side="left",padx=10)
+        channel_name_label.pack(side="left",padx=(5,10))
 
         is_live = data.get("lives")
         if is_live == True:
@@ -94,10 +96,28 @@ class saves_channels():
         else:
             status_text = "Офлайн"
         status_label = ctk.CTkLabel(top_frame,text=status_text)
-        status_label.pack(side="left",padx=10)
+        status_label.pack(side="right",padx=5)
 
         delete_btn = ctk.CTkButton(top_frame,image=self.delete_image,text="",width=28,height=28,fg_color="black",command=lambda:self.delete_channels(channel))
         delete_btn.pack(side="right",padx=5) 
+
+        if channel in MainConfig.tracked:
+            tracked = True 
+        else:
+            tracked = False 
+        if self.tray_seting.get("notify") is True:
+            if tracked is True:
+                image = self.no_push_image 
+                tool_text = "Перестать отслеживать" 
+            else: 
+                image = self.push_image
+                tool_text = "Отслеживать" 
+            tracked_btn = ctk.CTkButton(top_frame,image=image,text="",width=28,height=28,command=lambda:self._on_tracked(channel))
+            tracked_btn.pack(side="right",padx=5) 
+            tracked_tool = tooltip(tool_text,self.app,tracked_btn)
+        else:
+            tracked_btn = None 
+            tracked_tool = None
 
         if is_live == True:
             left_btn.configure(fg_color="green")
@@ -134,8 +154,29 @@ class saves_channels():
             "frame":row_frame,
             "top_frame":top_frame,
             "status_label": status_label,
-            "botton_frame": botton_frame
+            "botton_frame": botton_frame,
+            "tracked_btn" : tracked_btn,
+            "tracked_tool" : tracked_tool,
+            "tracked" : tracked
         }
+
+    def _on_tracked(self,channel:str):
+        info = self.channel_frame.get(channel)
+        tracked_btn = info.get("tracked_btn")
+        tracked_tool = info.get("tracked_tool")
+        if info.get("tracked") is False:
+            log.info(f"Добавление в отслеживаемое канала: {channel}")
+            tracked = True 
+            tracked_tool.edit_text("Перестать отслеживать")
+            tracked_btn.configure(image=self.no_push_image)
+            MainConfig.add_tracked(channel)
+        else:
+            log.info(f"Удаление из  отслеживаемое канала: {channel}")
+            tracked = False 
+            tracked_tool.edit_text("Отслеживать")
+            tracked_btn.configure(image=self.push_image)
+            MainConfig.del_tracked(channel)
+        self.channel_frame.get(channel)["tracked"] = tracked
 
     def edit_channels_activate(self):
         channel_name = self.placeholder_channels.get().strip()
@@ -156,6 +197,7 @@ class saves_channels():
         self.channels_list = storage.read_channels()
         if self.channels_list == None:
             return
+        self.tray_seting = MainConfig.dop_config.get("tray")
         self.placeholder_channels.configure(placeholder_text="Обновляется список")
         self.placeholder_channels.configure(state = "disabled")
         self.Button_channels.configure(state = "disabled")

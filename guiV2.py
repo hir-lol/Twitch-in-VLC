@@ -4,6 +4,7 @@ from PIL import Image
 
 from tools import *
 from window import *
+from tray import Tray
 
 log = logging.getLogger("guiV2")
 #=======================
@@ -67,17 +68,34 @@ def main():
             app.geometry("500x420")
             log.debug("Смена вкладки на Настройки 500x420")    
 
+    status = True 
+    def tab():
+        nonlocal status 
+        if status is True:
+            log.info("Скрытие главного окна")
+            app.withdraw()
+            status = False
+        else:
+            log.info("Показ главного окна")
+            app.deiconify()
+            status = True
+
+    def _tab():
+        app.after(100,tab)
+
+    def exit():
+        log.info("Закрытие приложения")
+        if MainConfig.dop_config.get("tray").get("enabled") is True:
+            tray.icon.stop()
+        app.destroy()
 #===========================
 #СОЗДАНИЕ ОКНА И ВКЛАДОК
 #===========================
 
     config = MainConfig.config
 
-    if "Dark_Theme" in config.get("More_Setting") :
-        if(config.get("More_Setting")).get("Dark_Theme") is False:
-            ctk.set_appearance_mode("light")
-        else:
-            ctk.set_appearance_mode("dark")
+    if MainConfig.dop_config.get("Dark_Theme") is False:
+        ctk.set_appearance_mode("light")
     else:
         ctk.set_appearance_mode("dark")
 
@@ -85,6 +103,7 @@ def main():
     app.title("Twitch in VLC")
     app.geometry("300x310")
     app.iconbitmap(MainConfig.icon)
+    app.protocol("WM_DELETE_WINDOW", lambda: exit())
 
     MainConfig.app = app
 
@@ -202,6 +221,16 @@ def main():
 #======================
 
     seting_window = setings_tabs(app=app, container = seting_container)
+
+#======================
+#Трей
+#======================
+
+    if MainConfig.dop_config.get("tray").get("enabled") is True:
+        tray = Tray(_tab)
+        tray.run()
+        if MainConfig.dop_config.get("tray").get("notify") is True:
+            MainConfig.qapi.put({"source":"start_check"})
 
     app.mainloop()
 

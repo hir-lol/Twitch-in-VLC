@@ -55,7 +55,7 @@ def edit_channels(data: list[str]):
     save_storage(storage)
 
 class ApiWorker():
-    def __init__(self,queue_request,queue_result):
+    def __init__(self,queue_request,queue_result,tracked):
         log.debug("Иницилизация класса")
         self.queue_request = queue_request 
         self.queue_result = queue_result
@@ -64,6 +64,7 @@ class ApiWorker():
         self.reset_time = time.time() + 60
         self.request = 0 
         self.queue_limit = None
+        self.tracked = tracked
 
     def start(self):
         threading.Thread(target=self._run,daemon=True).start()
@@ -77,6 +78,40 @@ class ApiWorker():
             while self.running:
                 await self._check_queue(s)
                 await asyncio.sleep(1)
+
+    async def _check_stream(self,s: aiohttp.ClientSession):
+        await asyncio.sleep(90.0)
+        log.info("Начало проверки на стрим")
+        tracked = {}
+        for item in self.tracked:
+            tracked[item] = False
+        while self.running:
+            for item in self.tracked:
+                await self._handle_rate_limit()
+                stream = await self.is_lives(s,item,False)
+                self.request += 1
+                if stream is True:
+                    try:
+                        if tracked[item] is True:
+                            continue 
+                    except KeyError:
+                        pass
+                    tracked[item] = True
+                    self.queue_result.put({
+                        "type": "TRAY_STREAM",
+                        "value": item
+                    })
+                else:
+                    try:
+                        if tracked[item] is True:
+                            self.queue_result.put({
+                                "type":"TRAY_STOP_STREAM",
+                                "value":item
+                            })
+                    except KeyError:
+                        pass
+                    tracked[item] = False
+            await asyncio.sleep(60.0)
 
     async def _check_queue(self,s: aiohttp.ClientSession):
         while not self.queue_request.empty():
@@ -98,6 +133,11 @@ class ApiWorker():
             elif keys == "channels_info":
                 value = task.get("value")
                 asyncio.create_task( self.get_channels_info(session = s,keys = value[0], channels = value[1]))
+            elif keys == "start_check":
+                asyncio.create_task(self._check_stream(s))
+            elif keys == "update_tracked":
+                value = task.get("value")
+                self.tracked = value
 
     async def get_channels_info(self, keys: str, channels: list, session: aiohttp.ClientSession):
         log.debug("Получение данных для списка каналов")
@@ -150,7 +190,7 @@ class ApiWorker():
                 "value" : ["error"]
             })        
 
-    async def is_lives(self, session: aiohttp.ClientSession, channel :str):
+    async def is_lives(self, session: aiohttp.ClientSession, channel :str,put: bool = True):
         log.debug(f"Проверка на стрим у {channel}")
         try:
             url_viewercount = f"https://decapi.me/twitch/viewercount/{channel}"
@@ -160,15 +200,16 @@ class ApiWorker():
                 value =  True
             else :
                 value = False
-            self.queue_result.put({
-                "source" : "is_lives",
-                "value" : value
-            })
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-            self.queue_result.put({
-                "source" : "is_lives",
-                "value" : "error"
-            })
+            value = "error"
+        finally:
+            if put is True:
+                self.queue_result.put({
+                    "source" : "is_lives",
+                    "value" : value
+                })
+            else:
+                return value
 
     async def get_parameters_channels(self, channels: str, session: aiohttp.ClientSession, keys: str):
         url_viewercount = f"https://decapi.me/twitch/viewercount/{channels}"

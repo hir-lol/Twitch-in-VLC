@@ -11,7 +11,7 @@ import ctypes
 import logging
 
 log = logging.getLogger(__name__)
-__all__ = ("load_config","get_base_path","show_error","MainConfig","tooltip","resorse_path")
+__all__ = ("load_config","get_base_path","show_error","MainConfig","tooltip","resorse_path","show_info")
 
 def load_config(CONFIG_FILE):
     log.info(f"Чтение json файла по пути: {CONFIG_FILE}")
@@ -43,6 +43,7 @@ _u32.MessageBoxW.restype = ctypes.c_int
 _MB_YESNO_Q = 0x24
 _MB_OR_ERR = 0x10
 _IDYES = 6
+_MB_OK_INFO = 0x40
 
 def show_error(title: str, message: str,tkinter: bool = False):
     if tkinter is True:
@@ -53,6 +54,12 @@ def show_error(title: str, message: str,tkinter: bool = False):
     else:
         _u32.MessageBoxW(0,message,title,_MB_OR_ERR)
 
+def show_info(title:str, message: str, otv: bool=False):
+    if otv is False:
+        _u32.MessageBoxW(0,message,title,_MB_OK_INFO)
+    else:
+        return _u32.MessageBoxW(0,message,title,_MB_YESNO_Q) == _IDYES
+
 class Config():
     """
     Класс для общения информацией между другими классами
@@ -62,13 +69,33 @@ class Config():
         self.CONFIG_FILE = os.path.join(get_base_path()+"/scripts/config.json")
         self.icon = (get_base_path() + "/assets/ICON.ico")
                 
-        self.config = load_config(self.CONFIG_FILE)        
+        self.config = load_config(self.CONFIG_FILE)
+        self.dop_config = self.config.get("More_Setting")
+        self.tracked = storage.load_storage().get("tracked")
 
         self.q = queue.Queue()
         self.qapi = queue.Queue()
-        self.api = storage.ApiWorker(self.qapi,self.q)
+        self.api = storage.ApiWorker(self.qapi,self.q,self.tracked)
         self.api.start()
         self.app = app
+
+    def save_tracked(self):
+        log.info("Сохранение отслеживаемых каналов")
+        old = storage.load_storage()
+        old["tracked"] = self.tracked
+        storage.save_storage(old)
+
+    def add_tracked(self,channel: str):
+        log.info(f"Добавление в отслеживаемое канал {channel}")
+        self.tracked.append(channel)
+        self.qapi.put({"source":"update_tracked","value":self.tracked})
+        self.save_tracked()
+        
+    def del_tracked(self,channel: str):
+        log.info(f"Удаление из отслеживаемых канал: {channel}")
+        self.tracked.remove(channel)
+        self.qapi.put({"source":"update_tracked","value":self.tracked})
+        self.save_tracked()        
 
     def save_config(self):
         log.info("Сохранение конфиг файла")
@@ -97,6 +124,7 @@ class Config():
                 line_queue.append(line)
         for line in line_queue:
             self.q.put(line)
+        line_queue.clear()
         if status is False:
             self.app.after(100,lambda: self.chek_queue(keys, callback))
 

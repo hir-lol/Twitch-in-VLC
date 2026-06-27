@@ -167,6 +167,7 @@ class tab_twitch():
                 queues.append(line)                    
         for line in queues:
             self.q.put(line)
+        queues.clear()
         self.app.after(100,self.check_core_ready)
 
     def read_stdout(self):
