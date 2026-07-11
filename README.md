@@ -1,4 +1,4 @@
-# Об проекте
+﻿# Об проекте
 **Twitch in VLC** - это интерфейс для  консольной программы 
 [Streamlink](https://streamlink.gihub.io), с фокусом на 
 [Twitch](https://www.twitch.tv)
@@ -21,11 +21,11 @@
 # Сборка из исходников
 - Скомпилируйте ядро: пример PyInstaller
 ``` bash
-pyinstaller --noconfirm --onefile --windowed --name "core" --collect-submodules "streamlink.plugins" --copy-metadata "streamlink"  "core.py"
+pyinstaller --noconfirm --onefile --windowed --name "core" --collect-submodules "streamlink.plugins" --copy-metadata "streamlink"  "scripts\core.py" 
 ```
 - Скомпилируйте gui: пример PyInstaller
 ``` bash
-pyinstaller --noconfirm --onefile --windowed --icon "assets\ICON.ico" --name "Twitch in VLC" --add-data "storage.py;." --copy-metadata "custmotkinter" --copy-metadata "streamlink" --copy-metadata "shutil" --copy-metadata "aiohttp" --copy-metadata "pillow" --collect-submodules "streamlink.plugins"  "guiV2.py"
+pyinstaller --noconfirm --onedir --windowed --icon "assets\ICON.ico" --name "Twitch in VLC"  --collect-submodules "streamlink.plugins" --copy-metadata "customtkinter" --copy-metadata "aiohttp" --copy-metadata "streamlink" --copy-metadata "pillow"  "guiV2.py"
 ```
 ---
 # Работа с исходниками
