@@ -102,6 +102,8 @@ class ApiWorker():
                         "value": item
                     })
                 else:
+                    if stream == "error":
+                        continue
                     try:
                         if tracked[item] is True:
                             self.queue_result.put({
@@ -191,7 +193,8 @@ class ApiWorker():
             })        
 
     async def is_lives(self, session: aiohttp.ClientSession, channel :str,put: bool = True):
-        log.debug(f"Проверка на стрим у {channel}")
+        if put is True:
+            log.debug(f"Проверка на стрим у {channel}")
         try:
             url_viewercount = f"https://decapi.me/twitch/viewercount/{channel}"
             async with session.get(url_viewercount) as r:
