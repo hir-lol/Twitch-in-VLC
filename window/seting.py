@@ -36,7 +36,7 @@ class Tray_seting():
 
     def _draw(self):
         self.root = ctk.CTkScrollableFrame(self.app)
-        self.root.pack(fill="both") 
+        self.root.pack(fill="both",expand=True)
 
         if self.seting.get("enabled") is True:
             self.enabled_var = ctk.BooleanVar(value=True)
@@ -54,6 +54,15 @@ class Tray_seting():
         self.notify.pack(padx=5,pady=5,anchor="w")
         tooltip("Включает уведомления об началах стримах и их окончаниях",self.main,self.notify)
         self.vars.append(["notify",self.notify_var])
+
+        if self.seting.get("hide") is True:
+            self.hide_var = ctk.BooleanVar(value=True)
+        else:
+            self.hide_var = ctk.BooleanVar()
+        self.hide =  ctk.CTkCheckBox(self.root,text="Скрытие окна",variable=self.hide_var)
+        self.hide.pack(padx=5,pady=5,anchor="w")
+        tooltip("Скрывать окно при запуске стрима",self.main,self.hide)
+        self.vars.append(["hide",self.hide_var])
 
     def _read(self):
         self.seting = MainConfig.dop_config.get("tray")

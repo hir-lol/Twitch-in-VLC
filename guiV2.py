@@ -69,8 +69,13 @@ def main():
             log.debug("Смена вкладки на Настройки 500x420")    
 
     status = True 
-    def tab():
-        nonlocal status 
+    def tab(close: False):
+        nonlocal status
+        if close is True:
+            log.info("Принудительное скрытие главного окна")
+            app.withdraw()
+            status = False
+            return
         if status is True:
             log.info("Скрытие главного окна")
             app.withdraw()
@@ -131,6 +136,7 @@ def main():
 #==============================
     
     main_tab = tab_twitch(app=main_container, window=app)
+    main_tab.tab = _tab
 
     icon_main = ctk.CTkImage(light_image = Image.open(get_base_path()+"/assets/icon1v.png"), dark_image = Image.open(get_base_path()+"/assets/icon1v.png"), size = (22,22))
     icon_url = ctk.CTkImage(light_image = Image.open(get_base_path()+"/assets/icon2v.png"), dark_image = Image.open(get_base_path()+"/assets/icon2v.png"), size = (22,22))
@@ -153,6 +159,7 @@ def main():
     url_tab.confirm_btn.configure(text="Получить качества")
     url_tab.url_entry.configure(placeholder_text="https://...")
     url_tab.quality_box_text = "Получите качества снова"
+    url_tab.tab = _tab
 
 #======================
 #ВКЛАДКА С ЗАПИСАНАМИ КАНАЛАМИ

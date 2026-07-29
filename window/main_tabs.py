@@ -64,6 +64,7 @@ class tab_twitch():
         self.config = self.communicate.config
         self.dop_config = self.config.get("More_Setting") if "More_Setting" in self.config else {}
         self.qualites_state = False
+        self.tab = None
 
     def reset(self):
         log.info("Нажата кнопка сброса")
@@ -162,6 +163,9 @@ class tab_twitch():
                     self.core_ready = True
                     self.core_error = False
                     self.core_ready_tooltip.unbinds()
+                    tray_config = MainConfig.dop_config.get("tray") if not None else {}
+                    if tray_config.get("hide") is True and tray_config.get("enabled") is True:
+                        self.tab(True)
                     return
             else:
                 queues.append(line)                    

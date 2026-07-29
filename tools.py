@@ -174,6 +174,20 @@ class Config():
                 "value": [status ,error_text]
             })
             return
+        except Exception:
+            log.exception("Неизвестная ошибка при запросе качеств")
+            try:
+                log.warn(f"Содержимое полученых данных: {result}")
+            except Exception:
+                print("aaa")
+                pass
+            status = "error"
+            error_text = "Неизвестная ошибка"
+            self.q.put( {
+                "source": "kach",
+                "value": [status ,error_text]
+            })
+            return
 
 MainConfig = Config()
 
