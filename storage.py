@@ -54,7 +54,7 @@ def edit_channels(data: list[str]):
     storage["channels"] = data 
     save_storage(storage)
 
-class ApiWorker():
+class ApiWorker:
     def __init__(self,queue_request,queue_result,tracked):
         log.debug("Иницилизация класса")
         self.queue_request = queue_request 
@@ -193,7 +193,7 @@ class ApiWorker():
             })        
 
     async def is_lives(self, session: aiohttp.ClientSession, channel :str,put: bool = True):
-        if put is True:
+        if put:
             log.debug(f"Проверка на стрим у {channel}")
         try:
             url_viewercount = f"https://decapi.me/twitch/viewercount/{channel}"
@@ -206,7 +206,7 @@ class ApiWorker():
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             value = "error"
         finally:
-            if put is True:
+            if put:
                 self.queue_result.put({
                     "source" : "is_lives",
                     "value" : value
@@ -284,7 +284,7 @@ class ApiWorker():
                     "source": "limit",
                     "value" : sleep_time
                 })
-            asyncio.sleep(sleep_time)
+            await asyncio.sleep(sleep_time)
             self.request = 0
             self.reset_time = now + 60
 
@@ -328,7 +328,7 @@ async def get_parameters_channel(channels: str):
             lives = True
         else :
             lives = False
-        if lives == True:
+        if lives:
             async with session.get(url_title) as r:
                 channels_title = await r.text()
             async with session.get(url_game) as r:

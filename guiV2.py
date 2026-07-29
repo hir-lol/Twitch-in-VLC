@@ -69,14 +69,14 @@ def main():
             log.debug("Смена вкладки на Настройки 500x420")    
 
     status = True 
-    def tab(close: False):
+    def tab(close:bool=False):
         nonlocal status
         if close is True:
             log.info("Принудительное скрытие главного окна")
             app.withdraw()
             status = False
             return
-        if status is True:
+        if status:
             log.info("Скрытие главного окна")
             app.withdraw()
             status = False

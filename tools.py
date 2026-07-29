@@ -46,7 +46,7 @@ _IDYES = 6
 _MB_OK_INFO = 0x40
 
 def show_error(title: str, message: str,tkinter: bool = False):
-    if tkinter is True:
+    if tkinter:
         root = Tk()
         root.withdraw() #Скрытие пустого окна
         messagebox.showerror(title, message)
@@ -55,12 +55,13 @@ def show_error(title: str, message: str,tkinter: bool = False):
         _u32.MessageBoxW(0,message,title,_MB_OR_ERR)
 
 def show_info(title:str, message: str, otv: bool=False):
-    if otv is False:
+    if not otv:
         _u32.MessageBoxW(0,message,title,_MB_OK_INFO)
+        return None
     else:
         return _u32.MessageBoxW(0,message,title,_MB_YESNO_Q) == _IDYES
 
-class Config():
+class Config:
     """
     Класс для общения информацией между другими классами
     """
@@ -125,7 +126,7 @@ class Config():
         for line in line_queue:
             self.q.put(line)
         line_queue.clear()
-        if status is False:
+        if not status:
             self.app.after(100,lambda: self.chek_queue(keys, callback))
 
     def get_available_qualities (self, twitch_url: str, mode: str):
@@ -191,7 +192,7 @@ class Config():
 
 MainConfig = Config()
 
-class tooltip():
+class tooltip:
     """
     text - Текст подсказки
     app - Главное окно, то на чей основе будет создан обьект подсказки (дочерний виджет)
@@ -205,7 +206,7 @@ class tooltip():
         self.label = ctk.CTkLabel(self.tooltip,text=text,font=("Arial",12),corner_radius=8,fg_color="#2b2b2b")
         self.label.pack()
         self.tooltip.withdraw()
-        if bind != None:
+        if bind is not None:
             bind.bind("<Enter>", self.on_enter)
             bind.bind("<Leave>", self.on_leave)
             self.bind = bind

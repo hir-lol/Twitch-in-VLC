@@ -1,15 +1,17 @@
-import logging 
-import pystray
+import logging
 import threading
-from PIL import Image
 from time import sleep
 from typing import Callable
-from tools import show_error, MainConfig
+
+import pystray
+from PIL import Image
+
+from tools import MainConfig
 from .command import *
 
 log = logging.getLogger(__name__)
 
-class Tray ():
+class Tray:
     def __init__(self,tab: Callable):
         log.debug("Иницилизация класса")
         self.image = Image.open(MainConfig.icon)
