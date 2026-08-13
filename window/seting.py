@@ -291,6 +291,38 @@ class dop_setting():
             "var" : self.Close_var
         })
 
+        self._create_logs_buttons(self.Main_Frame)
+
+    def _create_logs_buttons (self,app: ctk.CTkFrame):
+
+        self.logs_frame = ctk.CTkFrame(app,fg_color=app.cget("fg_color"))
+        self.logs_frame.pack(pady=5,padx=5,anchor="w")
+
+        self.logs_label = ctk.CTkLabel(self.logs_frame, text="Уровень логов")
+        self.logs_label.grid(row=0,column=0,padx=3,sticky="w")
+
+        self.logs_ComboBox = ctk.CTkComboBox(self.logs_frame,values=["WARN","INFO","DEBUG"], state="readonly")
+        self.logs_ComboBox.grid(row=0, column=1, padx=3, sticky="w")
+
+        match self.mods.get("logs"):
+            case "INFO":
+                self.logs_ComboBox.set("INFO")
+            case "WARN":
+                self.logs_ComboBox.set("WARN")
+            case "DEBUG":
+                self.logs_ComboBox.set("DEBUG")
+            case _ :
+                self.logs_ComboBox.set("WARN")
+                log.warning(f"Неизвестный уровень логирование -> {self.mods.get("logs")}; выставлен стандартный -> WARN")
+
+        self.var.append({
+            "tip": "logs",
+            "var": self.logs_ComboBox
+        })
+
+        self.logs_open_button = ctk.CTkButton(app,corner_radius=10,text="Открыть логи",command=lambda:open_file(str(get_base_path())+"/log.log"))
+        self.logs_open_button.pack(pady=5,padx=5,anchor="w")
+
     def add_dop_window (self, value = bool):
         if value is False:
             if self.mode == "portable":
@@ -436,6 +468,8 @@ class setings_tabs():
             text="Сохранить настройки",
             command=lambda: self.save_settings()
         ).pack(pady=15)
+
+        # Часть с зависимостями
 
         self.deps_label = ctk.CTkLabel(
             container,

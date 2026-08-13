@@ -11,7 +11,7 @@ import ctypes
 import logging
 
 log = logging.getLogger(__name__)
-__all__ = ("load_config","get_base_path","show_error","MainConfig","tooltip","resorse_path","show_info")
+__all__ = ("load_config","get_base_path","show_error","MainConfig","tooltip","open_file","show_info")
 
 def load_config(CONFIG_FILE):
     log.info(f"Чтение json файла по пути: {CONFIG_FILE}")
@@ -35,6 +35,13 @@ def resorse_path(relative_path):
     if hasattr(sys, "_MEINPASS"):
         return os.path.join(sys._MEINPASS , relative_path)
     return os.path.join(os.path.abspath("."), relative_path)
+
+def open_file(path:str):
+    log.info(f"Открытие файла по пути: {path}")
+    try:
+        os.startfile(path)
+    except FileNotFoundError:
+        log.exception("Не нашёлся файл")
 
 _u32 = ctypes.windll.user32
 _u32.MessageBoxW.argtypes = [ctypes.c_void_p, ctypes.c_wchar_p, ctypes.c_wchar_p, ctypes.c_uint]
@@ -79,6 +86,17 @@ class Config:
         self.api = storage.ApiWorker(self.qapi,self.q,self.tracked)
         self.api.start()
         self.app = app
+
+    def get_log_level(self):
+        match self.dop_config.get("logs"):
+            case "INFO":
+                return logging.INFO
+            case "WARN":
+                return logging.WARNING
+            case "DEBUG":
+                return logging.DEBUG
+            case _:
+                return logging.WARNING
 
     def save_tracked(self):
         log.info("Сохранение отслеживаемых каналов")

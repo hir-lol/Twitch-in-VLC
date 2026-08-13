@@ -76,6 +76,7 @@ def main():
             app.withdraw()
             status = False
             return
+
         if status:
             log.info("Скрытие главного окна")
             app.withdraw()
@@ -242,5 +243,5 @@ def main():
     app.mainloop()
 
 if __name__ == "__main__":
-    configure_logging(logging.DEBUG)
+    configure_logging(MainConfig.get_log_level())
     main()
