@@ -7,6 +7,9 @@ import time
 import threading
 import logging
 
+import ssl
+import certifi
+
 log = logging.getLogger(__name__)
 
 def get_base_path():
@@ -74,7 +77,11 @@ class ApiWorker:
 
     async def _async_loop(self):
         timeout = aiohttp.ClientTimeout(total=30)
-        async with aiohttp.ClientSession(timeout=timeout) as s:
+
+        ssl_context = ssl.create_default_context(cafile=certifi.where())
+        connector = aiohttp.TCPConnector(ssl=ssl_context)
+        
+        async with aiohttp.ClientSession(timeout=timeout ,connector=connector) as s:
             while self.running:
                 await self._check_queue(s)
                 await asyncio.sleep(1)

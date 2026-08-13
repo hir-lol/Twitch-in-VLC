@@ -5,6 +5,7 @@ venv/
 
 bilds/
 output/
+old/
 *.log
 *.json
 *.exe
