@@ -1,14 +1,14 @@
 {
     "VLC_PATH": "",
     "CHATTERINO_PATH": "",
-    "chat": "",
+    "chat": "Chatterino",
     "mode": [
-        "portable",
+        "module",
         "twitch"
     ],
     "channel": "",
     "kach": "",
-    "otv": "",
+    "otv": false,
     "URL": "",
     "URL_KACH": "",
     "More_Setting": {
@@ -17,6 +17,12 @@
         "Reset_mode": false,
         "Reset_close_mode": false,
         "Close_mode": false,
-        "Custom_arg": []
+        "logs": "WARN",
+        "Custom_arg": [],
+        "tray": {
+            "enabled": false,
+            "notify": false,
+            "hide": false
+        }
     }
 }
