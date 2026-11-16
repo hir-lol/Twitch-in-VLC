@@ -538,7 +538,7 @@ class setings_tabs():
         dop_setting["tray"] = self.app_tray.get()
         dop_setting["logs"] = self.logs_ComboBox.get()
         try:
-            if (MainConfig.config.get("mode"))[1] == "portable":
+            if (MainConfig.config.get("mode"))[0] == "portable":
                 item = self.app_arg.get_var()
                 dop_setting["Custom_arg"] = item
             else:
