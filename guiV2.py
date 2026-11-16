@@ -86,8 +86,8 @@ def main():
             app.deiconify()
             status = True
 
-    def _tab():
-        app.after(100,tab)
+    def _tab(close:bool=False):
+        app.after(100,lambda: tab(close))
 
     def exit():
         log.info("Закрытие приложения")

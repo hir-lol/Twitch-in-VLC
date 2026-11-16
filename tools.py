@@ -79,6 +79,11 @@ class Config:
                 
         self.config = load_config(self.CONFIG_FILE)
         self.dop_config = self.config.get("More_Setting")
+        try:
+            self.tray_config = self.dop_config.get("tray")
+        except Exception:
+            log.debug("Ошибка получения конфига трея")
+            self.tray_config = {}
         self.tracked = storage.load_storage().get("tracked")
 
         self.q = queue.Queue()

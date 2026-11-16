@@ -159,12 +159,11 @@ class tab_twitch():
                     show_error("Ой","Кажется ядро закрылось раньше чем ожидалось")
                     return
                 if line and "ready" in line:
-                    log.info("Ядрл готово к закрытию")
+                    log.info("Ядро готово к закрытию")
                     self.core_ready = True
                     self.core_error = False
                     self.core_ready_tooltip.unbinds()
-                    tray_config = MainConfig.dop_config.get("tray") if not None else {}
-                    if tray_config.get("hide") is True and tray_config.get("enabled") is True:
+                    if MainConfig.tray_config.get("hide") is True and MainConfig.tray_config.get("enabled") is True:
                         self.tab(True)
                     return
             else:

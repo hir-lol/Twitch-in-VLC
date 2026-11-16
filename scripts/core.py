@@ -71,9 +71,7 @@ def get_arg(twitch_url, kach, VLC_PATH) -> list:
     base = [
         "streamlink",
         twitch_url,
-        kach,
-        "--player-passthrough", "hls",
-        "--player", VLC_PATH
+        kach
     ]
     config = load_config()
     config = config.get("More_Setting")
@@ -90,6 +88,7 @@ def get_arg(twitch_url, kach, VLC_PATH) -> list:
                 continue
         except Exception:
             continue
+    base.extend(["--player", VLC_PATH])
     return base
 
 def start_VLC(twitch_url, kach, VLC_PATH):
@@ -111,6 +110,7 @@ def start_VLC(twitch_url, kach, VLC_PATH):
             "Ошибка запуска",
             f"Не удалось запустить стрим:\n{e}"
         )
+        print("[ERROR]",e)
         return False
 def start_chat(channel:str, CHATTERINO_PATH:str = False, Mode:bool = False):
     print("[INFO] Старт функции start_chat")
