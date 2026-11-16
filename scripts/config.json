@@ -17,12 +17,17 @@
         "Reset_mode": false,
         "Reset_close_mode": false,
         "Close_mode": false,
-        "logs": "WARN",
-        "Custom_arg": [],
         "tray": {
             "enabled": false,
             "notify": false,
             "hide": false
-        }
+        },
+        "logs": "WARN",
+        "Custom_arg": [
+            {
+                "text": "--twitch-low-latency",
+                "tooltip": "Пониженная задержка при просмотре twitch.tv"
+            }
+        ]
     }
 }

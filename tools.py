@@ -77,6 +77,16 @@ class Config:
         self.CONFIG_FILE = os.path.join(get_base_path()+"/scripts/config.json")
         self.icon = (get_base_path() + "/assets/ICON.ico")
                 
+        self.read_config()
+
+        self.q = queue.Queue()
+        self.qapi = queue.Queue()
+        self.api = storage.ApiWorker(self.qapi,self.q,self.tracked)
+        self.api.start()
+        self.app = app
+        self.colors = {}
+
+    def read_config(self):
         self.config = load_config(self.CONFIG_FILE)
         self.dop_config = self.config.get("More_Setting")
         try:
@@ -85,12 +95,6 @@ class Config:
             log.debug("Ошибка получения конфига трея")
             self.tray_config = {}
         self.tracked = storage.load_storage().get("tracked")
-
-        self.q = queue.Queue()
-        self.qapi = queue.Queue()
-        self.api = storage.ApiWorker(self.qapi,self.q,self.tracked)
-        self.api.start()
-        self.app = app
 
     def get_log_level(self):
         match self.dop_config.get("logs"):

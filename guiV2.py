@@ -145,6 +145,7 @@ def main():
     side_panel = ctk.CTkFrame(root_container, width = 30 ,height = 90,fg_color=root_container.cget("fg_color"), corner_radius = 10,bg_color=main_container.cget("fg_color"))
     side_panel.pack_propagate(False)
     side_panel.place(x = 20 , rely = 0.474, anchor = "center", relheight = 0.39)
+    MainConfig.colors["root_cont"] = app.cget("fg_color")
     
     btn_twitch = ctk.CTkButton(side_panel,image = icon_main,text="",width=40,height=40,fg_color="#1f6aa5",hover_color="#3a3a3a",command=lambda: set_veiw("twitch"))
     btn_twitch.pack(pady=8)

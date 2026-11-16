@@ -192,12 +192,10 @@ class dop_setting():
     """
     def __init__(self, app=ctk.CTkFrame, mode=str):
         log.debug("Создание контейнера для дополнительных настроек")
-        self.Image_arg = ctk.CTkImage(light_image = Image.open(get_base_path()+"/assets/info.png"), dark_image = Image.open(get_base_path()+"/assets/info.png"), size = (20,20))
         self.var=[]
         self.tab_in = False
         self.app = app
         self.mode = mode
-        self.add_dop_window(False)
         self.get_config()
         self.Add_Main_Objects()
         self.Add_Setting_Objects()
@@ -217,12 +215,6 @@ class dop_setting():
         arg = {}
         for item in self.var:
             arg[item.get("tip")] = (item.get("var")).get()
-        if self.mode == "portable":
-            item = self.app_arg.get_var()
-            arg["Custom_arg"] = item
-        else:
-            arg["Custom_arg"] = self.mods.get("Custom_arg")
-        arg["tray"] = self.app_tray.get()
         return arg
 
     def Add_Setting_Objects(self):
@@ -251,8 +243,6 @@ class dop_setting():
             "tip" : "Team_mode",
             "var" : self.Team_var
         })
-
-        self.add_dop_window(True)
 
         if self.mods.get("Reset_mode") is True:
             self.Reset_var = ctk.BooleanVar(value=True)
@@ -290,66 +280,6 @@ class dop_setting():
             "tip" : "Close_mode",
             "var" : self.Close_var
         })
-
-        self._create_logs_buttons(self.Main_Frame)
-
-    def _create_logs_buttons (self,app: ctk.CTkFrame):
-
-        self.logs_frame = ctk.CTkFrame(app,fg_color=app.cget("fg_color"))
-        self.logs_frame.pack(pady=5,padx=5,anchor="w")
-
-        self.logs_label = ctk.CTkLabel(self.logs_frame, text="Уровень логов")
-        self.logs_label.grid(row=0,column=0,padx=3,sticky="w")
-
-        self.logs_ComboBox = ctk.CTkComboBox(self.logs_frame,values=["WARN","INFO","DEBUG"], state="readonly")
-        self.logs_ComboBox.grid(row=0, column=1, padx=3, sticky="w")
-
-        match self.mods.get("logs"):
-            case "INFO":
-                self.logs_ComboBox.set("INFO")
-            case "WARN":
-                self.logs_ComboBox.set("WARN")
-            case "DEBUG":
-                self.logs_ComboBox.set("DEBUG")
-            case _ :
-                self.logs_ComboBox.set("WARN")
-                log.warning(f"Неизвестный уровень логирование -> {self.mods.get("logs")}; выставлен стандартный -> WARN")
-
-        self.var.append({
-            "tip": "logs",
-            "var": self.logs_ComboBox
-        })
-
-        self.logs_open_button = ctk.CTkButton(app,corner_radius=10,text="Открыть логи",command=lambda:open_file(str(get_base_path())+"/log.log"))
-        self.logs_open_button.pack(pady=5,padx=5,anchor="w")
-
-    def add_dop_window (self, value = bool):
-        if value is False:
-            if self.mode == "portable":
-                self.app_arg = add_arg_setting(self.app)
-            self.app_tray = Tray_seting(self.app)
-        else:
-            if self.mode == "portable":
-                self._agg_tab_frame(self.app_arg.arg_tab,"Дополнительные аргументы","Дополнительные аргументы при запуске стримов")
-            self._agg_tab_frame(self.app_tray.tab,"Настройки трея")
-
-    def _agg_tab_frame(self,tabing:Callable,text:str,tooltip_text:str=None):
-        self.agg_arg_frame = ctk.CTkFrame(self.Main_Frame)
-        self.agg_arg_frame.pack(pady=7,padx=5,anchor="w")
-
-        self.agg_arg_Button = ctk.CTkButton(
-            self.agg_arg_frame,
-            text = "",
-            image= self.Image_arg,
-            width=20,
-            command=lambda: tabing()
-        )
-        self.agg_arg_Button.grid(row=0,column=0,padx=5,pady=5)
-
-        self.agg_arg_Label = ctk.CTkLabel(self.agg_arg_frame,text=text)
-        self.agg_arg_Label.grid(row=0,column=1,padx=5,pady=5)
-        if tooltip_text is not None:
-            self.agg_arg_Tooltip = tooltip(tooltip_text,self.app,self.agg_arg_Label)
 
     def get_seting(self):
         value = {}
@@ -459,6 +389,8 @@ class setings_tabs():
         else:
             self.mode_var = "UNKNOW"
 
+        self.add_dop_window()
+
         self.dop_setting_frame = ctk.CTkFrame(container)
         self.dop_setting = dop_setting(self.dop_setting_frame,self.mode_var)
         self.dop_setting_frame.pack(pady=5,anchor="w",padx=10)
@@ -507,6 +439,78 @@ class setings_tabs():
 
             self.tooltip_streamlink_download_button = tooltip(text="Должен находится в системном PATH\nили находится в папке core",app=app,bind=self.streamlink_download_button)
 
+    def add_dop_window (self):
+        self.Image_arg = ctk.CTkImage(light_image = Image.open(get_base_path()+"/assets/info.png"), dark_image = Image.open(get_base_path()+"/assets/info.png"), size = (20,20))
+        self.app_arg = add_arg_setting(self.app)
+        self.app_tray = Tray_seting(self.app)
+
+        self.dop_window_frame = ctk.CTkFrame(self.container, fg_color=MainConfig.colors.get("root_cont"),corner_radius=7)
+        self.dop_window_frame.pack(fill="x", padx=15,pady=10)
+
+        self.dop_window_frame.grid_columnconfigure(0, weight=1)
+        self.dop_window_frame.grid_columnconfigure(1, weight=1)
+
+        self.app_tray_frame = ctk.CTkFrame(self.dop_window_frame, corner_radius=10)
+        self.app_tray_frame.grid(row=0, column=0, sticky="w",pady=10,padx=10)
+        self._agg_tab_frame(self.app_tray_frame,self.app_tray.tab,"Настройки трея")
+
+        try:
+            if (MainConfig.config.get("mode"))[0] == "portable":
+
+                self.dop_arg_frame = ctk.CTkFrame(self.dop_window_frame, corner_radius=10)
+                self.dop_arg_frame.grid(row=1, column=0,sticky="w",pady=10,padx=10)
+
+                self._agg_tab_frame(self.dop_arg_frame ,self.app_arg.arg_tab,"Дополнительные аргументы","Дополнительные аргументы при запуске стримов")
+        except Exception:
+            pass
+
+        self.logs_but_frame = ctk.CTkFrame(self.dop_window_frame, corner_radius=10,fg_color="transparent")
+        self.logs_but_frame.grid(row=0, column=1, sticky="e")
+        self._create_logs_buttons(self.logs_but_frame)
+
+        self.logs_but_open_frame = ctk.CTkFrame(self.dop_window_frame, corner_radius=10,fg_color="transparent")
+        self.logs_but_open_frame.grid(row=1, column=1, sticky="e")
+
+        self.logs_open_button = ctk.CTkButton(self.logs_but_open_frame,corner_radius=10,text="Открыть логи",command=lambda:open_file(str(get_base_path())+"/log.log"))
+        self.logs_open_button.pack(pady=5,padx=5,anchor="e")
+
+    def _create_logs_buttons (self,app: ctk.CTkFrame):
+
+        self.logs_frame = ctk.CTkFrame(app,fg_color=app.cget("fg_color"))
+        self.logs_frame.pack(pady=5,padx=5,anchor="w")
+
+        self.logs_label = ctk.CTkLabel(self.logs_frame, text="Уровень логов")
+        self.logs_label.grid(row=0,column=0,padx=3,sticky="w")
+
+        self.logs_ComboBox = ctk.CTkComboBox(self.logs_frame,values=["WARN","INFO","DEBUG"], state="readonly")
+        self.logs_ComboBox.grid(row=1, column=0, padx=3, sticky="w")
+
+        match MainConfig.dop_config.get("logs"):
+            case "INFO":
+                self.logs_ComboBox.set("INFO")
+            case "WARN":
+                self.logs_ComboBox.set("WARN")
+            case "DEBUG":
+                self.logs_ComboBox.set("DEBUG")
+            case _ :
+                self.logs_ComboBox.set("WARN")
+                log.warning(f"Неизвестный уровень логирование -> {self.mods.get("logs")}; выставлен стандартный -> WARN")
+
+    def _agg_tab_frame(self,frame: ctk.CTkFrame|ctk.CTkScrollableFrame,tabing:Callable,text:str,tooltip_text:str=None):
+        Button = ctk.CTkButton(
+            frame,
+            text = "",
+            image= self.Image_arg,
+            width=20,
+            command=lambda: tabing()
+        )
+        Button.grid(row=0,column=0,padx=5,pady=5)
+
+        Label = ctk.CTkLabel(frame,text=text)
+        Label.grid(row=0,column=1,padx=5,pady=5)
+        if tooltip_text is not None:
+            tooltip(tooltip_text,self.app,Label)
+
     def open_url(self, url: str):
         log.debug(f"Открытие ссылки {url} в браузере")
         webbrowser.open(url)
@@ -529,7 +533,19 @@ class setings_tabs():
             MainConfig.config["CHATTERINO_PATH"] = self.chat_entry.get()
         MainConfig.config["chat"] = self.chat.get()
         MainConfig.config["mode"] = [self.mode.get(),(MainConfig.config.get("mode"))[1]]
+
         dop_setting = self.dop_setting.get()
+        dop_setting["tray"] = self.app_tray.get()
+        dop_setting["logs"] = self.logs_ComboBox.get()
+        try:
+            if (MainConfig.config.get("mode"))[1] == "portable":
+                item = self.app_arg.get_var()
+                dop_setting["Custom_arg"] = item
+            else:
+                dop_setting["Custom_arg"] = MainConfig.dop_config.get("Custom_arg")
+        except Exception:
+            dop_setting["Custom_arg"] = MainConfig.dop_config.get("Custom_arg")
+
         MainConfig.config["More_Setting"] = dop_setting
         MainConfig.dop_config = dop_setting
         MainConfig.save_config()
